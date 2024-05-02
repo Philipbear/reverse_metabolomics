@@ -7,6 +7,9 @@ It filters the library based on core adduct check, ion dependency check, modcos 
 
 
 ### Usage
+
+if you are more familiar with jupyter notebook, you can use the [filter_library.ipynb](filter_library.ipynb) to run the script.
+
 1. work in an environment with the following packages installed: numpy, pandas, matchms
 ```commandline
 pip install numpy pandas matchms

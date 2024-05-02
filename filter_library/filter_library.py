@@ -85,18 +85,14 @@ def select_library(df, rt_tol=1, core_adduct_ls=None,
                                                              ms2_tol_da=ms2_tol_da,
                                                              modcos_score_cutoff=modcos_score_cutoff,
                                                              modcos_peak_cutoff=modcos_peak_cutoff)
-            if len(scan_ls) < len(_subdf):
-                print(f'{len(_subdf) - len(scan_ls)} spectra are removed for molecule {smiles}')
+            # if len(scan_ls) < len(_subdf):
+            #     print(f'{len(_subdf) - len(scan_ls)} spectra are removed for molecule {smiles}')
             selected_scan_ls.extend(scan_ls)
             if cmpd_adduct_to_be_removed:
                 cmpd_adduct_to_be_removed_dict[binned_rt] = cmpd_adduct_to_be_removed
 
     # mark the selected spectra
     df.loc[df['db_idx'].isin(selected_scan_ls), 'selected'] = True
-
-    print(f'{df.shape[0]} spectra in the library')
-    print(f'{df["selected"].sum()} spectra selected from the library')
-    print(f'{len(df["NAME"].unique())} compounds in the library')
 
     # remove spectra, indicated by cmpd_adduct_to_be_removed_dict
     if cmpd_adduct_to_be_removed_dict:
@@ -152,7 +148,7 @@ def write_tsv(df, library_tsv, out_tsv):
 
     # reserve lib_tsv with selected scans in 'EXTRACTSCAN' column
     lib_tsv = lib_tsv[lib_tsv['EXTRACTSCAN'].astype(str).isin(selected_scans)]
-    lib_tsv.to_csv(out_tsv, sep='\t', index=False)
+    lib_tsv.to_csv(out_tsv, sep='\t', index=False, na_rep='N/A')
 
 
 def subdf_check(df, core_adduct_ls=None,
@@ -177,8 +173,8 @@ def subdf_check(df, core_adduct_ls=None,
 
     # if no core adducts are found, return empty list
     if not subdf['core_adduct'].any():
-        print('No core adducts found: ', subdf['NAME'].iloc[0], '   Found adducts: ',
-              subdf['_ADDUCT'].unique().tolist())
+        # print('No core adducts found: ', subdf['NAME'].iloc[0], '   Found adducts: ',
+        #       subdf['_ADDUCT'].unique().tolist())
         return scan_no_ls, None
 
     # select the spectra with core adducts
@@ -312,6 +308,10 @@ def subdf_check(df, core_adduct_ls=None,
 
 
 def main():
+    # create the output folder
+    if not os.path.exists('output'):
+        os.makedirs('output')
+
     # list all the files in the input folder
     all_files = os.listdir('input')
     # filter the mgf files
