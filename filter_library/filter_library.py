@@ -483,7 +483,7 @@ def main(name_sep='_'):
         # main process
         df = generate_library_df(library_mgf, name_sep)
         df = select_library(df, cmpd_df_dict, ms2_tol_da=0.02, prec_intensity_cutoff=10,
-                            modcos_score_cutoff=0.6, modcos_peak_cutoff=4, write_df=True)
+                            modcos_score_cutoff=0.6, modcos_peak_cutoff=4, write_df=False)
 
         out_mgf = 'output/' + library_mgf.split('.mgf')[0] + '_filtered.mgf'
         write_to_mgf(df, out_mgf)
