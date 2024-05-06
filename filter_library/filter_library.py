@@ -8,13 +8,15 @@ Filter the library based on core adduct list, ion dependency, modcos match, and 
 import os
 import numpy as np
 import pandas as pd
+from molmass import Formula
 from matchms import Spectrum
 from matchms.similarity import ModifiedCosine
 
 
-def generate_library_df(library_mgf):
+def generate_library_df(library_mgf, name_sep):
     """
     Generate metadata dataframe for the mgf file
+    name_sep: separator for the compound name. eg, 'Phe_CA' -> '_' is the separator
     """
     with open(f'input/{library_mgf}', 'r') as file:
         spectrum_list = []
@@ -41,11 +43,11 @@ def generate_library_df(library_mgf):
             else:
                 # if line contains '=', it is a key-value pair
                 if '=' in _line:
-                    # split by first '=', in case of multiple '=' in the line
+                    # split by first '='
                     key, value = _line.split('=', 1)
                     spectrum[key] = value
                 else:
-                    # if no '=', it is a spectrum pair, split by tab or space
+                    # if no '=', it is a spectrum pair
                     this_mz, this_int = _line.split()
                     try:
                         mz_list.append(float(this_mz))
@@ -58,56 +60,73 @@ def generate_library_df(library_mgf):
     # split adduct by '[' and ']', get the middle part
     df['_ADDUCT'] = df['ADDUCT'].apply(lambda x: x.split('[')[1].split(']')[0] if '[' in x else x)
 
+    # split name by name_sep
+    df['_NAME'] = df['NAME'].apply(lambda x: x.split(' (Chimeric')[0] if ' (Chimeric' in x else x)
+    df['_NAME'] = df['_NAME'].apply(lambda x: x.split('_NCE')[0] if '_NCE' in x else x)
+    df['NAME_1'] = df['_NAME'].apply(lambda x: x.split(name_sep)[0] if name_sep in x else None)
+    df['NAME_2'] = df['_NAME'].apply(lambda x: x.split(name_sep)[1] if name_sep in x else None)
+    df['conjugate'] = df['NAME_2'].apply(lambda x: True if x is not None else False)
+
     return df
 
 
-def select_library(df, rt_tol=1, core_adduct_ls=None,
-                   ms2_tol_da=0.05, modcos_score_cutoff=0.6, modcos_peak_cutoff=4):
+def select_library(df, cmpd_df_dict, core_adduct_ls=None,
+                   ms2_tol_da=0.02, prec_intensity_cutoff=10,
+                   modcos_score_cutoff=0.6, modcos_peak_cutoff=4,
+                   write_df=False):
     """
     Filter the library based on core adduct list, ion dependency, modcos match, and isobaric mass check
+    if observing one precursor existence beyond prec_intensity_cutoff, remove ones with prec intensity 0.
+    modcos: either pass the score or the number of matched peaks
     """
-    df['selected'] = [False] * df.shape[0]
-    # get the unique molecules
-    unique_smiles = df['SMILES'].unique().tolist()
+    df['selected'] = [True] * df.shape[0]
+    df['discard_reason'] = [None] * df.shape[0]
 
-    selected_scan_ls = []
-    cmpd_adduct_to_be_removed_dict = {}  # key: RT, value: cmpd_adduct_to_be_removed
-
+    # convert to float
     df['RTINSECONDS'] = df['RTINSECONDS'].astype(float)
-    df['binned_RT'] = pd.cut(df['RTINSECONDS'], bins=range(0, int(df['RTINSECONDS'].max()) + rt_tol * 2, rt_tol * 2))
-    for smiles in unique_smiles:
-        # filter the library for the molecule
-        sub_df = df[(df['SMILES'] == smiles)]
-        for binned_rt in sub_df['binned_RT'].unique():
-            _subdf = sub_df[sub_df['binned_RT'] == binned_rt]
-            # check the subdf
-            scan_ls, cmpd_adduct_to_be_removed = subdf_check(_subdf, core_adduct_ls=core_adduct_ls,
-                                                             ms2_tol_da=ms2_tol_da,
-                                                             modcos_score_cutoff=modcos_score_cutoff,
-                                                             modcos_peak_cutoff=modcos_peak_cutoff)
-            # if len(scan_ls) < len(_subdf):
-            #     print(f'{len(_subdf) - len(scan_ls)} spectra are removed for molecule {smiles}')
-            selected_scan_ls.extend(scan_ls)
-            if cmpd_adduct_to_be_removed:
-                cmpd_adduct_to_be_removed_dict[binned_rt] = cmpd_adduct_to_be_removed
+    df['PEPMASS'] = df['PEPMASS'].astype(float)
+    # bin the RT
+    df['_RT'] = df['RTINSECONDS'].apply(lambda x: round(x, 2))
+    # bin the PEPMASS
+    df['_PEPMASS'] = df['PEPMASS'].apply(lambda x: round(x, 3))
 
-    # mark the selected spectra
-    df.loc[df['db_idx'].isin(selected_scan_ls), 'selected'] = True
-
-    # remove spectra, indicated by cmpd_adduct_to_be_removed_dict
-    if cmpd_adduct_to_be_removed_dict:
-        for binned_rt, cmpd_adduct_to_be_removed in cmpd_adduct_to_be_removed_dict.items():
-            for cmpd_adduct in cmpd_adduct_to_be_removed:
-                name, adduct, _ = cmpd_adduct.split(':')
-                df.loc[(df['binned_RT'] == binned_rt) & (df['NAME'] == name.strip()) & (df['ADDUCT'] == adduct.strip()),
-                'selected'] = False
-
-    # remove cols
-    df = df.drop(['_ADDUCT', 'db_idx', 'binned_RT'], axis=1)
+    # filter spectra, indicated by precursor existence
+    discarded_scan_ls = precursor_check(df, cmpd_df_dict,
+                                        ms2_tol_da=ms2_tol_da,
+                                        prec_intensity_cutoff=prec_intensity_cutoff)
+    df.loc[df['db_idx'].isin(discarded_scan_ls), 'selected'] = False
+    df.loc[df['db_idx'].isin(discarded_scan_ls), 'discard_reason'] = 'precursor_check'
 
     print(f'{df.shape[0]} spectra in the library')
+    print('After precursor existence check:')
+    print(f'{df["selected"].sum()} spectra remaining in the library')
+    print(f'{len(df["NAME"].unique())} compounds in the library')
+
+    # core adduct check
+    discarded_scan_ls, cmpd_adduct_to_be_removed_dict = core_adduct_check(df, core_adduct_ls=core_adduct_ls,
+                                                                          ms2_tol_da=ms2_tol_da,
+                                                                          modcos_score_cutoff=modcos_score_cutoff,
+                                                                          modcos_peak_cutoff=modcos_peak_cutoff)
+    df.loc[df['db_idx'].isin(discarded_scan_ls), 'selected'] = False
+    df.loc[df['db_idx'].isin(discarded_scan_ls), 'discard_reason'] = 'core_adduct_check'
+
+    print('After adduct check, ion dependency, mod cos match:')
+    print(f'{df["selected"].sum()} spectra remaining in the library')
+    print(f'{len(df["NAME"].unique())} compounds in the library')
+
+    # remove spectra, indicated by cmpd_adduct_to_be_removed_dict
+    df = isobaric_mass_adduct_check(df, cmpd_adduct_to_be_removed_dict)
+
+    print('After isobaric mass filter (unique adduct existence):')
     print(f'{df["selected"].sum()} spectra selected from the library')
     print(f'{len(df["NAME"].unique())} compounds in the library')
+
+    if write_df:
+        df.to_csv('output/filtered_library.tsv', sep='\t', index=False)
+
+    # remove cols
+    df = df.drop(['_ADDUCT', '_NAME', 'db_idx', '_RT', 'NAME_1', 'NAME_2', 'conjugate', '_PEPMASS', 'cmpd_1_prec_int',
+                  'cmpd_2_prec_int', 'max_prec_int', 'discard_reason'], axis=1)
 
     return df
 
@@ -151,6 +170,96 @@ def write_tsv(df, library_tsv, out_tsv):
     lib_tsv.to_csv(out_tsv, sep='\t', index=False, na_rep='N/A')
 
 
+def precursor_check(df, cmpd_df_dict, ms2_tol_da, prec_intensity_cutoff=10):
+    """
+    precursor existence check
+    this is to remove the spectra that are labeled incorrectly (one spectrum being selected multiple times)
+    """
+    df['cmpd_1_prec_int'] = [None] * df.shape[0]
+    df['cmpd_2_prec_int'] = [None] * df.shape[0]
+    df['max_prec_int'] = [0] * df.shape[0]
+    for idx, row in df.iterrows():
+        if not row['conjugate']:
+            continue
+        if row['OTHER_MATCHED_COMPOUNDS'] is None:
+            continue
+
+        # get the precursor mz M+H of the two compounds
+        cmpd_1_prec_mz = cmpd_df_dict.get(row['NAME_1'])
+        cmpd_2_prec_mz = cmpd_df_dict.get(row['NAME_2'])
+        cmpd_1_prec_int = 0
+        cmpd_2_prec_int = 0
+        if cmpd_1_prec_mz:
+            mz_idx = np.argmin(np.abs(np.array(row['mz_ls']) - cmpd_1_prec_mz))
+            if np.abs(row['mz_ls'][mz_idx] - cmpd_1_prec_mz) <= ms2_tol_da:
+                cmpd_1_prec_int = row['intensity_ls'][mz_idx]
+                df.loc[idx, 'cmpd_1_prec_int'] = cmpd_1_prec_int
+        if cmpd_2_prec_mz:
+            mz_idx = np.argmin(np.abs(np.array(row['mz_ls']) - cmpd_2_prec_mz))
+            if np.abs(row['mz_ls'][mz_idx] - cmpd_2_prec_mz) <= ms2_tol_da:
+                cmpd_2_prec_int = row['intensity_ls'][mz_idx]
+                df.loc[idx, 'cmpd_2_prec_int'] = cmpd_2_prec_int
+
+        df.loc[idx, 'max_prec_int'] = max(cmpd_1_prec_int, cmpd_2_prec_int)
+
+    # sort df by _RT and _PEPMASS
+    df = df.sort_values(['_RT', '_PEPMASS'])
+    df['_PEPMASS'] = df['_PEPMASS'].astype(str)
+
+    _df = df[df['conjugate']]
+    discarded_scan_ls = []
+    for binned_rt in _df['_RT'].unique():
+        subdf = _df[_df['_RT'] == binned_rt]
+        # choose a subdf with the same precursor mz
+        for prec_mz in subdf['_PEPMASS'].unique():
+            _subdf = subdf[subdf['_PEPMASS'] == prec_mz]
+
+            if len(_subdf) == 1:
+                continue
+
+            # different compounds
+            if len(_subdf['_NAME'].unique()) == 1:
+                continue
+
+            # maximum precursor intensity
+            if _subdf['max_prec_int'].max() < prec_intensity_cutoff:
+                continue
+
+            # if multiple, sort by max_prec_int
+            _subdf = _subdf.sort_values('max_prec_int', ascending=False)
+
+            to_discard = _subdf[_subdf['max_prec_int'] == 0]['db_idx'].tolist()
+            discarded_scan_ls.extend(to_discard)
+
+    return discarded_scan_ls
+
+
+def core_adduct_check(df, core_adduct_ls=None,
+                      ms2_tol_da=0.05, modcos_score_cutoff=0.6, modcos_peak_cutoff=4):
+    df = df[df['selected']].copy()
+    # get the unique molecules
+    unique_smiles = df['SMILES'].unique().tolist()
+    # list of selected scan numbers
+    discarded_scan_ls = []
+    cmpd_adduct_to_be_removed_dict = {}  # key: RT, value: cmpd_adduct_to_be_removed
+    # filter the library by (SMILES, _RT)
+    for smiles in unique_smiles:
+        sub_df = df[(df['SMILES'] == smiles)]
+        for binned_rt in sub_df['_RT'].unique():
+            _subdf = sub_df[sub_df['_RT'] == binned_rt]
+
+            # check the subdf
+            scan_ls, cmpd_adduct_to_be_removed = subdf_check(_subdf, core_adduct_ls=core_adduct_ls,
+                                                             ms2_tol_da=ms2_tol_da,
+                                                             modcos_score_cutoff=modcos_score_cutoff,
+                                                             modcos_peak_cutoff=modcos_peak_cutoff)
+            discarded_scan_ls.extend(scan_ls)
+            if cmpd_adduct_to_be_removed:
+                cmpd_adduct_to_be_removed_dict[binned_rt] = cmpd_adduct_to_be_removed
+
+    return discarded_scan_ls, cmpd_adduct_to_be_removed_dict
+
+
 def subdf_check(df, core_adduct_ls=None,
                 ms2_tol_da=0.05, modcos_score_cutoff=0.6, modcos_peak_cutoff=4):
     """
@@ -164,9 +273,6 @@ def subdf_check(df, core_adduct_ls=None,
     # create a ModifiedCosine object
     modified_cosine = ModifiedCosine(tolerance=ms2_tol_da)
 
-    # scan numbers of the selected spectra
-    scan_no_ls = []
-
     subdf = df.copy()
     # check the core adducts, if any adduct in the core_adduct_ls is in the library
     subdf['core_adduct'] = subdf['_ADDUCT'].map(lambda x: x in core_adduct_ls)
@@ -175,7 +281,7 @@ def subdf_check(df, core_adduct_ls=None,
     if not subdf['core_adduct'].any():
         # print('No core adducts found: ', subdf['NAME'].iloc[0], '   Found adducts: ',
         #       subdf['_ADDUCT'].unique().tolist())
-        return scan_no_ls, None
+        return subdf['db_idx'].tolist(), []
 
     # select the spectra with core adducts
     core_df = subdf[subdf['core_adduct']].copy()
@@ -300,14 +406,55 @@ def subdf_check(df, core_adduct_ls=None,
             cmpd_adduct_to_be_removed = [x.split(';') for x in cmpd_adduct_to_be_removed]
             cmpd_adduct_to_be_removed = [item for sublist in cmpd_adduct_to_be_removed for item in sublist]
 
-        # db_idx of the selected spectra
-        scan_no_ls = subdf[subdf['selected']]['db_idx'].tolist()
-        return scan_no_ls, cmpd_adduct_to_be_removed
+        # db_idx of the discarded spectra
+        discarded_scan_no_ls = subdf[~subdf['selected']]['db_idx'].tolist()
+        return discarded_scan_no_ls, cmpd_adduct_to_be_removed
     else:
-        return subdf['db_idx'].tolist(), None
+        return [], None
 
 
-def main():
+def isobaric_mass_adduct_check(df, cmpd_adduct_to_be_removed_dict):
+    """
+    isobaric mass filter, based on unique adduct existence
+    """
+    if cmpd_adduct_to_be_removed_dict:
+        for binned_rt, cmpd_adduct_to_be_removed in cmpd_adduct_to_be_removed_dict.items():
+            for cmpd_adduct in cmpd_adduct_to_be_removed:
+                name, adduct, _ = cmpd_adduct.split(':')
+                row_idx = df[
+                    (df['_RT'] == binned_rt) & (df['NAME'] == name.strip()) & (df['ADDUCT'] == adduct.strip())].index
+                if len(row_idx) > 0:
+                    df.loc[row_idx, 'selected'] = False
+                    df.loc[row_idx, 'discard_reason'] = 'isobaric_mass_adduct_check'
+    return df
+
+
+def preprocess_cmpd_df(library_csv):
+    """
+    Preprocess the compound dataframe, return a dictionary of compound name to precursor mass (M+H)
+    """
+    cmpd_df = pd.read_csv(f'input/{library_csv}')
+
+    cmpd_df['prec_mz'] = cmpd_df['formula'].apply(calc_prec_mz)
+
+    # dictionary of mapping name to precursor mass
+    cmpd_df_dict = cmpd_df.set_index('compound_name')['prec_mz'].to_dict()
+
+    return cmpd_df_dict
+
+
+def calc_prec_mz(formula):
+    """
+    Calculate the precursor mass (M+H) for a given formula string
+    """
+    try:
+        f = Formula(formula)
+        return f.monoisotopic_mass + 1.007276
+    except:
+        return None
+
+
+def main(name_sep='_'):
     # create the output folder
     if not os.path.exists('output'):
         os.makedirs('output')
@@ -319,14 +466,24 @@ def main():
 
     for library_mgf in library_mgfs:
         print(f'Processing {library_mgf}')
-        # check the existence of the library_mgf.tsv
+
+        # check the existence of the .tsv
         library_tsv = library_mgf.split('.mgf')[0] + '.tsv'
         if not os.path.exists(f'input/{library_tsv}'):
-            print(f'{library_tsv} does not exist')
+            print(f'tsv file missing: {library_tsv} does not exist')
             continue
-        df = generate_library_df(library_mgf)
-        df = select_library(df, rt_tol=2, ms2_tol_da=0.05,
-                            modcos_score_cutoff=0.6, modcos_peak_cutoff=4)
+
+        # check the existence of the .csv
+        library_csv = library_mgf.split('.mgf')[0] + '.csv'
+        if not os.path.exists(f'input/{library_csv}'):
+            print(f'csv file missing: {library_csv} does not exist')
+            continue
+        cmpd_df_dict = preprocess_cmpd_df(library_csv)
+
+        # main process
+        df = generate_library_df(library_mgf, name_sep)
+        df = select_library(df, cmpd_df_dict, ms2_tol_da=0.02, prec_intensity_cutoff=10,
+                            modcos_score_cutoff=0.6, modcos_peak_cutoff=4, write_df=True)
 
         out_mgf = 'output/' + library_mgf.split('.mgf')[0] + '_filtered.mgf'
         write_to_mgf(df, out_mgf)
@@ -335,4 +492,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(name_sep='_')  # name_sep: separator for the compound name. eg, 'Phe_CA' -> '_' is the separator
