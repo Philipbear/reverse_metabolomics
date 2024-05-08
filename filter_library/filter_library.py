@@ -70,7 +70,7 @@ def generate_library_df(library_mgf, name_sep):
     return df
 
 
-def select_library(df, cmpd_df_dict, core_adduct_ls=None,
+def select_library(df, cmpd_df_dict, core_adduct_ls=None, rt_tol=2,
                    ms2_tol_da=0.02, prec_intensity_cutoff=10,
                    modcos_score_cutoff=0.6, modcos_peak_cutoff=4,
                    write_df=False):
@@ -86,7 +86,7 @@ def select_library(df, cmpd_df_dict, core_adduct_ls=None,
     df['RTINSECONDS'] = df['RTINSECONDS'].astype(float)
     df['PEPMASS'] = df['PEPMASS'].astype(float)
     # bin the RT
-    df['_RT'] = df['RTINSECONDS'].apply(lambda x: round(x, 2))
+    df['_RT'] = pd.cut(df['RTINSECONDS'], bins=range(0, int(df['RTINSECONDS'].max()) + 1, rt_tol))
     # bin the PEPMASS
     df['_PEPMASS'] = df['PEPMASS'].apply(lambda x: round(x, 3))
 
@@ -482,8 +482,9 @@ def main(name_sep='_'):
 
         # main process
         df = generate_library_df(library_mgf, name_sep)
-        df = select_library(df, cmpd_df_dict, ms2_tol_da=0.02, prec_intensity_cutoff=10,
-                            modcos_score_cutoff=0.6, modcos_peak_cutoff=4, write_df=False)
+        df = select_library(df, cmpd_df_dict, rt_tol=2,
+                            ms2_tol_da=0.02, prec_intensity_cutoff=10,
+                            modcos_score_cutoff=0.6, modcos_peak_cutoff=4, write_df=True)
 
         out_mgf = 'output/' + library_mgf.split('.mgf')[0] + '_filtered.mgf'
         write_to_mgf(df, out_mgf)
