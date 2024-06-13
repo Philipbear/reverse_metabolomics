@@ -6,14 +6,15 @@ Filter the library based on core adduct list, ion dependency, modcos match, and 
 """
 
 import os
+
 import numpy as np
 import pandas as pd
-from molmass import Formula
 from matchms import Spectrum
 from matchms.similarity import ModifiedCosine
+from molmass import Formula
 
 
-def generate_library_df(library_mgf, name_sep):
+def generate_library_df(library_mgf, name_sep='_'):
     """
     Generate metadata dataframe for the mgf file
     name_sep: separator for the compound name. eg, 'Phe_CA' -> '_' is the separator
@@ -493,4 +494,4 @@ def main(name_sep='_'):
 
 
 if __name__ == '__main__':
-    main(name_sep='_')  # name_sep: separator for the compound name. eg, 'Phe_CA' -> '_' is the separator
+    main()
