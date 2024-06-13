@@ -64,8 +64,8 @@ def generate_library_df(library_mgf, name_sep='_'):
     # split name by name_sep
     df['_NAME'] = df['NAME'].apply(lambda x: x.split(' (Chimeric')[0] if ' (Chimeric' in x else x)
     df['_NAME'] = df['_NAME'].apply(lambda x: x.split('_NCE')[0] if '_NCE' in x else x)
-    df['NAME_1'] = df['_NAME'].apply(lambda x: x.split(name_sep)[0] if name_sep in x else None)
-    df['NAME_2'] = df['_NAME'].apply(lambda x: x.split(name_sep)[1] if name_sep in x else None)
+    df['NAME_1'] = df['_NAME'].apply(lambda x: x.split(name_sep, 1)[0] if name_sep in x else None)
+    df['NAME_2'] = df['_NAME'].apply(lambda x: x.split(name_sep, 1)[1] if name_sep in x else None)
     df['conjugate'] = df['NAME_2'].apply(lambda x: True if x is not None else False)
 
     return df
