@@ -71,7 +71,7 @@ def generate_library_df(library_mgf, name_sep='_'):
     return df
 
 
-def select_library(df, cmpd_df_dict, core_adduct_ls=None, rt_tol=2,
+def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2,
                    ms2_tol_da=0.02, prec_intensity_cutoff=10,
                    modcos_score_cutoff=0.6, modcos_peak_cutoff=4,
                    write_df=False):
@@ -123,7 +123,8 @@ def select_library(df, cmpd_df_dict, core_adduct_ls=None, rt_tol=2,
     print(f'{len(df["NAME"].unique())} compounds in the library')
 
     if write_df:
-        df.to_csv('output/filtered_library.tsv', sep='\t', index=False)
+        out_name = f'output/library_metadata/{df_base_name}_metadata.tsv'
+        df.to_csv(out_name, sep='\t', index=False)
 
     # remove cols
     df = df.drop(['_ADDUCT', '_NAME', 'db_idx', '_RT', 'NAME_1', 'NAME_2', 'conjugate', '_PEPMASS', 'cmpd_1_prec_int',
@@ -460,6 +461,9 @@ def main(name_sep='_'):
     if not os.path.exists('output'):
         os.makedirs('output')
 
+    if not os.path.exists('output/library_metadata'):
+        os.makedirs('output/library_metadata')
+
     # list all the files in the input folder
     all_files = os.listdir('input')
     # filter the mgf files
@@ -468,14 +472,16 @@ def main(name_sep='_'):
     for library_mgf in library_mgfs:
         print(f'Processing {library_mgf}')
 
+        base_name = library_mgf.split('.mgf')[0]
+
         # check the existence of the .tsv
-        library_tsv = library_mgf.split('.mgf')[0] + '.tsv'
+        library_tsv = base_name + '.tsv'
         if not os.path.exists(f'input/{library_tsv}'):
             print(f'tsv file missing: {library_tsv} does not exist')
             continue
 
         # check the existence of the .csv
-        library_csv = library_mgf.split('.mgf')[0] + '.csv'
+        library_csv = base_name + '.csv'
         if not os.path.exists(f'input/{library_csv}'):
             print(f'csv file missing: {library_csv} does not exist')
             continue
@@ -483,13 +489,13 @@ def main(name_sep='_'):
 
         # main process
         df = generate_library_df(library_mgf, name_sep)
-        df = select_library(df, cmpd_df_dict, rt_tol=2,
-                            ms2_tol_da=0.02, prec_intensity_cutoff=10,
+        df = select_library(df, cmpd_df_dict, base_name,
+                            rt_tol=2, ms2_tol_da=0.02, prec_intensity_cutoff=10,
                             modcos_score_cutoff=0.6, modcos_peak_cutoff=4, write_df=True)
 
-        out_mgf = 'output/' + library_mgf.split('.mgf')[0] + '_filtered.mgf'
+        out_mgf = 'output/' + base_name + '_filtered.mgf'
         write_to_mgf(df, out_mgf)
-        out_tsv = 'output/' + library_tsv.split('.tsv')[0] + '_filtered.tsv'
+        out_tsv = 'output/' + base_name + '_filtered.tsv'
         write_tsv(df, library_tsv, out_tsv)
 
 
