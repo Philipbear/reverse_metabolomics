@@ -1,7 +1,8 @@
 # reverse_metabolomics
-The entire SOP for generating spectral library using reverse metabolomics is [available here](https://docs.google.com/document/d/1jvLTQ_gbU6-ljOjG2v-6W_8KIpOSBRT5cJthqHA_TB0/edit?usp=sharing).
 
-All the required files/scripts are listed in this GitHub repository, such that we can track the update.
+All the required codes are included in this GitHub repository, such that further updates can be easily tracked.
+
+The entire SOP for reverse metabolomics is [available here](https://docs.google.com/document/d/1jvLTQ_gbU6-ljOjG2v-6W_8KIpOSBRT5cJthqHA_TB0/edit?usp=sharing).
 
 
 ## generate_smiles
