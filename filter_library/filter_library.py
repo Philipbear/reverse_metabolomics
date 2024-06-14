@@ -19,7 +19,8 @@ def generate_library_df(library_mgf, name_sep='_'):
     Generate metadata dataframe for the mgf file
     name_sep: separator for the compound name. eg, 'Phe_CA' -> '_' is the separator
     """
-    with open(f'input/{library_mgf}', 'r') as file:
+    mgf_file = os.path.join('input', library_mgf)
+    with open(mgf_file, 'r') as file:
         spectrum_list = []
         db_idx = 1
         for line in file:
@@ -123,8 +124,9 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
     print(f'{len(df["NAME"].unique())} compounds in the library')
 
     if write_df:
-        out_name = f'output/library_metadata/{df_base_name}_metadata.tsv'
-        df.to_csv(out_name, sep='\t', index=False)
+        file_path = os.path.join('output', 'library_metadata')
+        file_path = os.path.join(file_path, f'{df_base_name}_metadata.tsv')
+        df.to_csv(file_path, sep='\t', index=False)
 
     # remove cols
     df = df.drop(['_ADDUCT', '_NAME', 'db_idx', '_RT', 'NAME_1', 'NAME_2', 'conjugate', '_PEPMASS', 'cmpd_1_prec_int',
@@ -162,7 +164,8 @@ def write_tsv(df, library_tsv, out_tsv):
     """
     Write the selected library to a new tsv file
     """
-    lib_tsv = pd.read_csv(f'input/{library_tsv}', sep='\t')
+    file_path = os.path.join('input', library_tsv)
+    lib_tsv = pd.read_csv(file_path, sep='\t')
 
     # all SCANs selected
     selected_scans = df[df['selected']]['SCANS'].tolist()
@@ -435,7 +438,8 @@ def preprocess_cmpd_df(library_csv):
     """
     Preprocess the compound dataframe, return a dictionary of compound name to precursor mass (M+H)
     """
-    cmpd_df = pd.read_csv(f'input/{library_csv}')
+    file_path = os.path.join('input', library_csv)
+    cmpd_df = pd.read_csv(file_path)
 
     cmpd_df['prec_mz'] = cmpd_df['formula'].apply(calc_prec_mz)
 
@@ -461,8 +465,9 @@ def main(name_sep='_'):
     if not os.path.exists('output'):
         os.makedirs('output')
 
-    if not os.path.exists('output/library_metadata'):
-        os.makedirs('output/library_metadata')
+    metadata_folder = os.path.join('output', 'library_metadata')
+    if not os.path.exists(metadata_folder):
+        os.makedirs(metadata_folder)
 
     # list all the files in the input folder
     all_files = os.listdir('input')
@@ -476,13 +481,15 @@ def main(name_sep='_'):
 
         # check the existence of the .tsv
         library_tsv = base_name + '.tsv'
-        if not os.path.exists(f'input/{library_tsv}'):
+        file_path = os.path.join('input', library_tsv)
+        if not os.path.exists(file_path):
             print(f'tsv file missing: {library_tsv} does not exist')
             continue
 
         # check the existence of the .csv
         library_csv = base_name + '.csv'
-        if not os.path.exists(f'input/{library_csv}'):
+        file_path = os.path.join('input', library_csv)
+        if not os.path.exists(file_path):
             print(f'csv file missing: {library_csv} does not exist')
             continue
         cmpd_df_dict = preprocess_cmpd_df(library_csv)
@@ -493,9 +500,9 @@ def main(name_sep='_'):
                             rt_tol=2, ms2_tol_da=0.02, prec_intensity_cutoff=10,
                             modcos_score_cutoff=0.6, modcos_peak_cutoff=4, write_df=True)
 
-        out_mgf = 'output/' + base_name + '_filtered.mgf'
+        out_mgf = os.path.join('output', base_name + '_filtered.mgf')
         write_to_mgf(df, out_mgf)
-        out_tsv = 'output/' + base_name + '_filtered.tsv'
+        out_tsv = os.path.join('output', base_name + '_filtered.tsv')
         write_tsv(df, library_tsv, out_tsv)
 
 
