@@ -1,4 +1,4 @@
-# reverse_metabolomics
+# Reverse metabolomics
 
 All the required codes are included in this GitHub repository, such that further updates can be easily tracked.
 

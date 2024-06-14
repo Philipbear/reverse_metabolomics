@@ -8,7 +8,7 @@ It filters the library based on precursor check, core adduct check, ion dependen
 
 ### Usage
 
-You can directly use the juptyer notebook `filter_library.ipynb` to run the script.
+You can directly use the jupyter notebook `filter_library.ipynb` to run the script.
 
 
 - Preparation:
