@@ -272,8 +272,9 @@ def subdf_check(df, core_adduct_ls=None,
     :return: a list of selected scan numbers, a list of compound:adduct to be removed
     """
     if core_adduct_ls is None:
-        core_adduct_ls = ['M+H', 'M-H2O+H', 'M+NH4', 'M-2H2O+H', 'M-H2O+NH4', 'M-2H2O+NH4', '2M+H',
-                          '2M-H2O+H', '2M+NH4', '2M-2H2O+H', '2M-H2O+NH4', '2M-2H2O+NH4', 'M-H']
+        core_adduct_ls = ['M+H', 'M-H2O+H', 'M+NH4', 'M-2H2O+H', 'M-H2O+NH4', 'M-2H2O+NH4',
+                          '2M+H', '2M-H2O+H', '2M+NH4', '2M-2H2O+H', '2M-H2O+NH4', '2M-2H2O+NH4',
+                          'M-H', 'M+2H', 'M-H2O+2H', 'M-2H2O+2H']
 
     # create a ModifiedCosine object
     modified_cosine = ModifiedCosine(tolerance=ms2_tol_da)
@@ -336,6 +337,14 @@ def subdf_check(df, core_adduct_ls=None,
                 allowed_adducts.remove('M-3H2O+H')
         if 'M-3H2O+H' in unique_adducts and 'M-2H2O+H' not in unique_adducts and 'M+H' in unique_adducts:
             allowed_adducts.remove('M-3H2O+H')
+
+        if 'M-2H2O+2H' in unique_adducts and 'M-H2O+2H' not in unique_adducts and 'M+2H' in unique_adducts:
+            allowed_adducts.remove('M-2H2O+2H')
+            if 'M-3H2O+2H' in allowed_adducts:
+                allowed_adducts.remove('M-3H2O+2H')
+        if 'M-3H2O+2H' in unique_adducts and 'M-2H2O+2H' not in unique_adducts and 'M+2H' in unique_adducts:
+            allowed_adducts.remove('M-3H2O+2H')
+
         if 'M-2H2O+NH4' in unique_adducts and 'M-H2O+NH4' not in unique_adducts and 'M-2H2O+H' not in unique_adducts:
             allowed_adducts.remove('M-2H2O+NH4')
             if 'M-3H2O+NH4' in allowed_adducts:
@@ -373,6 +382,14 @@ def subdf_check(df, core_adduct_ls=None,
                 allowed_adducts.remove('2M-3H2O+H')
         if '2M-3H2O+H' in unique_adducts and '2M-2H2O+H' not in unique_adducts and '2M+H' in unique_adducts:
             allowed_adducts.remove('2M-3H2O+H')
+
+        if '2M-2H2O+2H' in unique_adducts and '2M-H2O+2H' not in unique_adducts and '2M+2H' in unique_adducts:
+            allowed_adducts.remove('2M-2H2O+2H')
+            if '2M-3H2O+2H' in allowed_adducts:
+                allowed_adducts.remove('2M-3H2O+2H')
+        if '2M-3H2O+2H' in unique_adducts and '2M-2H2O+2H' not in unique_adducts and '2M+2H' in unique_adducts:
+            allowed_adducts.remove('2M-3H2O+2H')
+
         if '2M-2H2O+NH4' in unique_adducts and '2M-H2O+NH4' not in unique_adducts and '2M-2H2O+H' not in unique_adducts:
             allowed_adducts.remove('2M-2H2O+NH4')
             if '2M-3H2O+NH4' in allowed_adducts:
