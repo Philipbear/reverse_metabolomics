@@ -101,8 +101,8 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
 
     print(f'{df.shape[0]} spectra in the library')
     print('After precursor existence check:')
-    print(f'{df["selected"].sum()} spectra remaining in the library')
-    print(f'{len(df["NAME"].unique())} compounds in the library')
+    print(f'{df["selected"].sum()} spectra remaining')
+    print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
 
     # core adduct check
     discarded_scan_ls, cmpd_adduct_to_be_removed_dict = core_adduct_check(df, core_adduct_ls=core_adduct_ls,
@@ -113,15 +113,15 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
     df.loc[df['db_idx'].isin(discarded_scan_ls), 'discard_reason'] = 'core_adduct_check'
 
     print('After adduct check, ion dependency, mod cos match:')
-    print(f'{df["selected"].sum()} spectra remaining in the library')
-    print(f'{len(df["NAME"].unique())} compounds in the library')
+    print(f'{df["selected"].sum()} spectra remaining')
+    print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
 
     # remove spectra, indicated by cmpd_adduct_to_be_removed_dict
     df = isobaric_mass_adduct_check(df, cmpd_adduct_to_be_removed_dict)
 
     print('After isobaric mass filter (unique adduct existence):')
-    print(f'{df["selected"].sum()} spectra selected from the library')
-    print(f'{len(df["NAME"].unique())} compounds in the library')
+    print(f'{df["selected"].sum()} spectra selected')
+    print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
 
     if write_df:
         file_path = os.path.join('output', 'library_metadata')
