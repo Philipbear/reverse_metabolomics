@@ -12,6 +12,8 @@ import pandas as pd
 from matchms import Spectrum
 from matchms.similarity import ModifiedCosine
 from molmass import Formula
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 
 def generate_library_df(library_mgf, name_sep='_'):
@@ -458,12 +460,33 @@ def preprocess_cmpd_df(library_csv):
     file_path = os.path.join('input', library_csv)
     cmpd_df = pd.read_csv(file_path)
 
+    # rename column 'SMILES' to 'smiles'
+    if 'SMILES' in cmpd_df.columns:
+        cmpd_df = cmpd_df.rename(columns={'SMILES': 'smiles'})
+
+    # check if 'formula' column exists
+    if 'formula' not in cmpd_df.columns:
+        print('formula column missing, converting SMILES to formula')
+        cmpd_df['formula'] = cmpd_df['smiles'].apply(smiles_to_formula)
+
     cmpd_df['prec_mz'] = cmpd_df['formula'].apply(calc_prec_mz)
 
     # dictionary of mapping name to precursor mass
     cmpd_df_dict = cmpd_df.set_index('compound_name')['prec_mz'].to_dict()
 
     return cmpd_df_dict
+
+
+def smiles_to_formula(smiles):
+    # Convert SMILES to a molecule object
+    mol = Chem.MolFromSmiles(smiles)
+
+    if mol:
+        # Get the molecular formula
+        formula = rdMolDescriptors.CalcMolFormula(mol)
+        return formula
+    else:
+        return None
 
 
 def calc_prec_mz(formula):
