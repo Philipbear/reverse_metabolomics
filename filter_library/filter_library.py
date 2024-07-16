@@ -143,7 +143,7 @@ def write_to_mgf(df, out_mgf):
     """
     df = df[df['selected']].reset_index(drop=True)
     # remove cols
-    df = df.drop(['selected'], axis=1)
+    df = df.drop(['selected', 'OTHER_MATCHED_COMPOUNDS', 'OTHER_MATCHED_COMPOUNDS_NAMES', 'SPECTYPE'], axis=1)
     # move cols mz_ls and intensity_ls to the end
     df = df[[col for col in df.columns if col not in ['Num peaks', 'mz_ls', 'intensity_ls']] + ['Num peaks', 'mz_ls',
                                                                                                 'intensity_ls']]
