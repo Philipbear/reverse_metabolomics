@@ -149,6 +149,7 @@ def write_to_mgf(df, out_mgf):
                                                                                                 'intensity_ls']]
 
     with open(out_mgf, 'w') as file:
+        scan_idx = 1
         for idx, row in df.iterrows():
             file.write('BEGIN IONS\n')
             for key, value in row.items():
@@ -157,14 +158,19 @@ def write_to_mgf(df, out_mgf):
                         file.write(f'{mz} {intensity}\n')
                 elif key == 'intensity_ls':
                     continue
+                elif key == 'SCANS':
+                    file.write(f'SCANS={scan_idx}\n')
+                elif key == 'FEATURE_ID':
+                    file.write(f'FEATURE_ID={value}\n')
                 else:
                     file.write(f'{key}={value}\n')
             file.write('END IONS\n\n')
+            scan_idx += 1
 
 
 def write_tsv(df, library_tsv, out_tsv):
     """
-    Write the selected library to a new tsv file
+    Write the selected library to a new tsv file, for library generation on GNPS
     """
     file_path = os.path.join('input', library_tsv)
     lib_tsv = pd.read_csv(file_path, sep='\t')
@@ -174,6 +180,9 @@ def write_tsv(df, library_tsv, out_tsv):
 
     # reserve lib_tsv with selected scans in 'EXTRACTSCAN' column
     lib_tsv = lib_tsv[lib_tsv['EXTRACTSCAN'].astype(str).isin(selected_scans)]
+
+    # fill 'EXTRACTSCAN' column with 1 to length of lib_tsv
+    lib_tsv['EXTRACTSCAN'] = range(1, lib_tsv.shape[0] + 1)
     lib_tsv.to_csv(out_tsv, sep='\t', index=False, na_rep='N/A')
 
 
