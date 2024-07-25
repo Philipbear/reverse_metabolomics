@@ -86,6 +86,16 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
     df['selected'] = [True] * df.shape[0]
     df['discard_reason'] = [None] * df.shape[0]
 
+    # remove doubly charged adduct
+    _doubly_charged_adducts = df['ADDUCT'].str.contains(r'\]+2', regex=True)
+    df.loc[_doubly_charged_adducts, 'selected'] = False
+    df.loc[_doubly_charged_adducts, 'discard_reason'] = 'doubly_charged_adduct'
+
+    print(f'{df.shape[0]} spectra in the library')
+    print('After removing doubly charged adducts:')
+    print(f'{df["selected"].sum()} spectra remaining')
+    print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
+
     # convert to float
     df['RTINSECONDS'] = df['RTINSECONDS'].astype(float)
     df['PEPMASS'] = df['PEPMASS'].astype(float)
@@ -95,13 +105,15 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
     df['_PEPMASS'] = df['PEPMASS'].apply(lambda x: round(x, 3))
 
     # filter spectra, indicated by precursor existence
+    df['cmpd_1_prec_int'] = [None] * df.shape[0]
+    df['cmpd_2_prec_int'] = [None] * df.shape[0]
+    df['max_prec_int'] = [0] * df.shape[0]
     discarded_scan_ls = precursor_check(df, cmpd_df_dict,
                                         ms2_tol_da=ms2_tol_da,
                                         prec_intensity_cutoff=prec_intensity_cutoff)
     df.loc[df['db_idx'].isin(discarded_scan_ls), 'selected'] = False
     df.loc[df['db_idx'].isin(discarded_scan_ls), 'discard_reason'] = 'precursor_check'
 
-    print(f'{df.shape[0]} spectra in the library')
     print('After precursor existence check:')
     print(f'{df["selected"].sum()} spectra remaining')
     print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
@@ -195,10 +207,10 @@ def precursor_check(df, cmpd_df_dict, ms2_tol_da, prec_intensity_cutoff=10):
     precursor existence check
     this is to remove the spectra that are labeled incorrectly (one spectrum being selected multiple times)
     """
-    df['cmpd_1_prec_int'] = [None] * df.shape[0]
-    df['cmpd_2_prec_int'] = [None] * df.shape[0]
-    df['max_prec_int'] = [0] * df.shape[0]
+
     for idx, row in df.iterrows():
+        if not row['selected']:
+            continue
         if not row['conjugate']:
             continue
         if row['OTHER_MATCHED_COMPOUNDS'] is None:
