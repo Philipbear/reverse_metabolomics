@@ -10,7 +10,7 @@ import os
 import numpy as np
 import pandas as pd
 from matchms import Spectrum
-from matchms.similarity import ModifiedCosine
+from matchms.similarity import ModifiedCosine, CosineGreedy
 from molmass import Formula
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -76,7 +76,7 @@ def generate_library_df(library_mgf, name_sep='_'):
 
 def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2,
                    ms2_tol_da=0.02, prec_intensity_cutoff=10,
-                   modcos_score_cutoff=0.6, modcos_peak_cutoff=4,
+                   modcos_score_cutoff=0.6, modcos_peak_cutoff=4, cos_score_cutoff=0.95,
                    write_df=False):
     """
     Filter the library based on core adduct list, ion dependency, modcos match, and isobaric mass check
@@ -86,6 +86,7 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
     df['selected'] = [True] * df.shape[0]
     df['discard_reason'] = [None] * df.shape[0]
 
+    ##########################################
     # remove doubly charged adduct
     _doubly_charged_adducts = df['ADDUCT'].str.contains(r'\]+2', regex=True)
     df.loc[_doubly_charged_adducts, 'selected'] = False
@@ -104,6 +105,7 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
     # bin the PEPMASS
     df['_PEPMASS'] = df['PEPMASS'].apply(lambda x: round(x, 3))
 
+    ##########################################
     # filter spectra, indicated by precursor existence
     df['cmpd_1_prec_int'] = [None] * df.shape[0]
     df['cmpd_2_prec_int'] = [None] * df.shape[0]
@@ -118,6 +120,7 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
     print(f'{df["selected"].sum()} spectra remaining')
     print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
 
+    ##########################################
     # core adduct check
     discarded_scan_ls, cmpd_adduct_to_be_removed_dict = core_adduct_check(df, core_adduct_ls=core_adduct_ls,
                                                                           ms2_tol_da=ms2_tol_da,
@@ -130,10 +133,19 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
     print(f'{df["selected"].sum()} spectra remaining')
     print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
 
+    ##########################################
     # remove spectra, indicated by cmpd_adduct_to_be_removed_dict
     df = isobaric_mass_adduct_check(df, cmpd_adduct_to_be_removed_dict)
 
     print('After isobaric mass filter (unique adduct existence):')
+    print(f'{df["selected"].sum()} spectra selected')
+    print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
+
+    ##########################################
+    # remove almost identical spectra
+    df = remove_identical_spectra(df, ms2_tol_da=ms2_tol_da, cos_score_cutoff=cos_score_cutoff)
+
+    print('After removing almost identical spectra:')
     print(f'{df["selected"].sum()} spectra selected')
     print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
 
@@ -147,6 +159,54 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
                   'cmpd_2_prec_int', 'max_prec_int', 'discard_reason'], axis=1)
 
     return df
+
+
+def remove_identical_spectra(df, ms2_tol_da=0.02, cos_score_cutoff=0.95):
+    """
+    Remove almost identical spectra
+    """
+    # sort df by NAME and ADDUCT
+    df = df.sort_values(['NAME', 'ADDUCT'])
+
+    # Group by NAME and ADDUCT
+    for (name, adduct), group in df.groupby(['NAME', 'ADDUCT']):
+        # Sort group by precursor_purity from high to low
+        group = group.sort_values('PRECURSOR_PURITY', ascending=False).reset_index(drop=True)
+
+        for i in range(1, len(group)):
+            if group.loc[i, 'selected']:
+                for j in range(i):
+                    if group.loc[j, 'selected']:
+                        # Compare spectra
+                        score = compare_spectra_cos(group.iloc[j], group.iloc[i], ms2_tol_da)
+                        if score > cos_score_cutoff:
+                            group.loc[i, 'selected'] = False
+                            group.loc[i, 'discard_reason'] = 'almost_identical_spectrum'
+                            break
+
+        # Update the original DataFrame
+        df.loc[group.index, 'selected'] = group['selected']
+
+    return df
+
+
+def compare_spectra_cos(spec1, spec2, ms2_tol_da=0.02):
+    """
+    Compare two spectra using cosine similarity
+    """
+    # Create Spectrum objects
+    spectrum1 = Spectrum(mz=np.array(spec1['mz_ls']),
+                         intensities=np.array(spec1['intensity_ls']),
+                         metadata={'precursor_mz': spec1['PEPMASS']})
+    spectrum2 = Spectrum(mz=np.array(spec2['mz_ls']),
+                         intensities=np.array(spec2['intensity_ls']),
+                         metadata={'precursor_mz': spec2['PEPMASS']})
+
+    # Calculate cosine similarity
+    cos_greedy = CosineGreedy(tolerance=ms2_tol_da)
+    score = cos_greedy.pair(spectrum1, spectrum2)
+
+    return score['score']
 
 
 def write_to_mgf(df, out_mgf):
@@ -563,7 +623,9 @@ def main(name_sep='_'):
         df = generate_library_df(library_mgf, name_sep)
         df = select_library(df, cmpd_df_dict, base_name,
                             rt_tol=2, ms2_tol_da=0.02, prec_intensity_cutoff=10,
-                            modcos_score_cutoff=0.6, modcos_peak_cutoff=4, write_df=True)
+                            modcos_score_cutoff=0.6, modcos_peak_cutoff=4,
+                            cos_score_cutoff=0.95,
+                            write_df=True)
 
         out_mgf = os.path.join('output', base_name + '_filtered.mgf')
         write_to_mgf(df, out_mgf)
