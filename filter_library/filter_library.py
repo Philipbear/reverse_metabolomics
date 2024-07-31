@@ -86,17 +86,6 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
     df['selected'] = [True] * df.shape[0]
     df['discard_reason'] = [None] * df.shape[0]
 
-    ##########################################
-    # remove doubly charged adduct
-    _doubly_charged_adducts = df['ADDUCT'].str.contains(r'\][\s]*[+]?2|2[+]', regex=True)
-    df.loc[_doubly_charged_adducts, 'selected'] = False
-    df.loc[_doubly_charged_adducts, 'discard_reason'] = 'doubly_charged_adduct'
-
-    print(f'{df.shape[0]} spectra in the library')
-    print('After removing doubly charged adducts:')
-    print(f'{df["selected"].sum()} spectra remaining')
-    print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
-
     # convert to float
     df['RTINSECONDS'] = df['RTINSECONDS'].astype(float)
     df['PEPMASS'] = df['PEPMASS'].astype(float)
@@ -116,6 +105,7 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
     df.loc[df['db_idx'].isin(discarded_scan_ls), 'selected'] = False
     df.loc[df['db_idx'].isin(discarded_scan_ls), 'discard_reason'] = 'precursor_check'
 
+    print(f'{df.shape[0]} spectra in the library')
     print('After precursor existence check:')
     print(f'{df["selected"].sum()} spectra remaining')
     print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
@@ -147,6 +137,16 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
 
     print('After removing almost identical spectra:')
     print(f'{df["selected"].sum()} spectra selected')
+    print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
+
+    ##########################################
+    # remove doubly charged adduct
+    _doubly_charged_adducts = df['ADDUCT'].str.contains(r'\][\s]*[+]?2|2[+]', regex=True)
+    df.loc[_doubly_charged_adducts, 'selected'] = False
+    df.loc[_doubly_charged_adducts, 'discard_reason'] = 'doubly_charged_adduct'
+
+    print('After removing doubly charged adducts:')
+    print(f'{df["selected"].sum()} spectra remaining')
     print(f'{len(df["NAME"][df["selected"]].unique())} compounds')
 
     if write_df:
