@@ -88,7 +88,7 @@ def select_library(df, cmpd_df_dict, df_base_name, core_adduct_ls=None, rt_tol=2
 
     ##########################################
     # remove doubly charged adduct
-    _doubly_charged_adducts = df['ADDUCT'].str.contains(r'\]+2', regex=True)
+    _doubly_charged_adducts = df['ADDUCT'].str.contains(r'\][\s]*[+]?2|2[+]', regex=True)
     df.loc[_doubly_charged_adducts, 'selected'] = False
     df.loc[_doubly_charged_adducts, 'discard_reason'] = 'doubly_charged_adduct'
 
