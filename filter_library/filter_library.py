@@ -168,11 +168,15 @@ def remove_identical_spectra(df, ms2_tol_da=0.02, cos_score_cutoff=0.95):
     # sort df by NAME and ADDUCT
     df = df.sort_values(['NAME', 'ADDUCT'])
 
+    # Create a copy of the dataframe to store updates
+    df_updated = df.copy()
+
     # Group by NAME and ADDUCT
     for (name, adduct), group in df.groupby(['NAME', 'ADDUCT']):
-        # Sort group by precursor_purity from high to low
-        group = group.sort_values('PRECURSOR_PURITY', ascending=False).reset_index(drop=True)
+        # Sort group by precursor_purity from high to low and reset index
+        group = group.sort_values('PRECURSOR_PURITY', ascending=False).reset_index()
 
+        # Iterate through the group
         for i in range(1, len(group)):
             if group.loc[i, 'selected']:
                 for j in range(i):
@@ -180,14 +184,16 @@ def remove_identical_spectra(df, ms2_tol_da=0.02, cos_score_cutoff=0.95):
                         # Compare spectra
                         score = compare_spectra_cos(group.iloc[j], group.iloc[i], ms2_tol_da)
                         if score > cos_score_cutoff:
-                            group.loc[i, 'selected'] = False
-                            group.loc[i, 'discard_reason'] = 'almost_identical_spectrum'
+                            # Use the original index to update df_updated
+                            original_idx = group.loc[i, 'index']
+                            df_updated.loc[original_idx, 'selected'] = False
+                            df_updated.loc[original_idx, 'discard_reason'] = 'almost_identical_spectrum'
                             break
 
-        # Update the original DataFrame
-        df.loc[group.index, 'selected'] = group['selected']
+    return df_updated
 
-    return df
+
+
 
 
 def compare_spectra_cos(spec1, spec2, ms2_tol_da=0.02):
