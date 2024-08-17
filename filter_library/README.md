@@ -22,3 +22,9 @@ The underscore `_` should be removed from individual compound names, and only us
 For example: `Phenylalanine_cholic acid` is the conjugated compound of `Phenylalanine` and `cholic acid`.
 
 If `_` exists in individual compound names, it should be replaced with `-`. e.g., `L_alanine` -> `L-alanine`.
+
+
+
+### things to discuss
+- multiple peaks (isomer, ISF)
+- 

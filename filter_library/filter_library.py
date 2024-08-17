@@ -593,12 +593,10 @@ def calc_prec_mz(formula):
 
 def main(name_sep='_'):
     # create the output folder
-    if not os.path.exists('output'):
-        os.makedirs('output')
+    os.makedirs('output', exist_ok=True)
 
     metadata_folder = os.path.join('output', 'library_metadata')
-    if not os.path.exists(metadata_folder):
-        os.makedirs(metadata_folder)
+    os.makedirs(metadata_folder, exist_ok=True)
 
     # list all the files in the input folder
     all_files = os.listdir('input')
