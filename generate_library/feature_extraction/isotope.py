@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def annotate_isotope(d, mz_tol=0.015, rt_tol=0.1, valid_intensity_ratio_range=[0.001, 1.2]):
+def annotate_isotope(d, mz_tol=0.01, rt_tol=0.05, valid_intensity_ratio_range=[0.001, 1.2]):
     """
     Function to annotate isotopes.
     """
@@ -26,7 +26,7 @@ def annotate_isotope(d, mz_tol=0.015, rt_tol=0.1, valid_intensity_ratio_range=[0
         if len(v) > 0:
             # an isotope can't have intensity 1.2 fold or higher than M0 or 1% lower than the M0
             v = [v[i] for i in range(len(v)) if d.rois[v[i]].peak_height < valid_intensity_ratio_range[1] * r.peak_height]
-            v = [v[i] for i in range(len(v)) if d.rois[v[i]].peak_height > 0.01*r.peak_height]
+            v = [v[i] for i in range(len(v)) if d.rois[v[i]].peak_height > 0.01 * r.peak_height]
             if len(v) > 0:
                 r.charge_state = 2
 

@@ -8,8 +8,8 @@ from .raw_data_utils import MSData
 
 def feature_extraction_single(file_path, mass_detect_int_tol=5e4,
                               peak_cor_rt_tol=0.025, min_ppc=0.8,
-                              ms1_tol=0.01, ms2_tol=0.015,
-                              out_dir=None):
+                              ms1_tol=0.005, ms2_tol=0.015,
+                              save=True, out_dir=None):
     """
     feature detection from a single .mzML file
     """
@@ -44,12 +44,13 @@ def feature_extraction_single(file_path, mass_detect_int_tol=5e4,
     annotate_adduct(d)
 
     # output single file to a tsv file, in the same directory as the raw file
+    print('Generating feature table...')
     if out_dir is None:
         out_dir = os.path.dirname(file_path)
 
-    d.output_single_file(out_dir)
+    df = d.output_single_file(save, out_dir)
 
-    return d
+    return df
 
 
 def init_config(ion_mode="positive",
@@ -60,27 +61,12 @@ def init_config(ion_mode="positive",
     config = Params()
 
     ##########################
-    # The project
-    config.project_dir = None  # Project directory, character string
-    config.sample_names = None  # Absolute paths to the raw files, without extension, list of character strings
-    config.sample_groups = None  # Sample groups, list of character strings
-    config.sample_group_num = None  # Number of sample groups, integer
-    config.sample_dir = None  # Directory for the sample information, character string
-    config.single_file_dir = None  # Directory for the single file output, character string
-
     # MS data acquisition
-    config.rt_range = [0.0, 1000.0]  # RT range in minutes, list of two floats
     config.ion_mode = ion_mode  # Ionization mode, "positive" or "negative", character string
-
-    # Feature detection
     config.mz_tol_ms1 = mz_tol_ms1  # m/z tolerance for MS1, default is 0.01
     config.mz_tol_ms2 = mz_tol_ms2  # m/z tolerance for MS2, default is 0.015
     config.int_tol = mass_detect_int_tol  # Intensity tolerance, default is 30000 for Orbitrap and 1000 for other instruments, integer
-    config.roi_gap = 30  # Gap within a feature, default is 30 (i.e. 30 consecutive scans without signal), integer
     config.ppr = min_ppc  # Peak-peak correlation threshold for feature grouping, default is 0.8
     config.peak_cor_rt_tol = peak_cor_rt_tol  # RT tolerance for peak correlation, default is 0.2
-
-    # Parameters for output
-    config.output_single_file = False  # Whether to output the processed individual files to a csv file
 
     return config

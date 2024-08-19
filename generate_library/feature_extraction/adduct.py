@@ -34,8 +34,8 @@ def annotate_adduct(d):
     mz_tol = d.params.mz_tol_ms1
     rt_tol = d.params.peak_cor_rt_tol
 
-    # sort rois by peak height
-    d.rois.sort(key=lambda x: x.peak_height, reverse=True)
+    # sort rois by mz
+    d.rois.sort(key=lambda x: x.mz)
     roi_to_label = np.ones(len(d.rois), dtype=bool)
 
     # isotopes, in-source fragments
@@ -50,7 +50,7 @@ def annotate_adduct(d):
         default_single_adduct = "[M-H]-"
         default_double_adduct = "[M-2H]2-"
 
-    adduct_single_list, adduct_double_list = _pop_adduct_list(_adduct_pos, _adduct_neg, d.params.ion_mode.lower())
+    adduct_list = _pop_adduct_list(_adduct_pos, _adduct_neg, d.params.ion_mode.lower())
 
     # find adducts by assuming the current roi is [M+H]+ ([M-H]- in negative mode)
     group_no = 1
@@ -59,15 +59,17 @@ def annotate_adduct(d):
         if not roi_to_label[idx]:
             continue
 
-        mol_mass = _calc_exact_mol_mass(r.mz, r.charge_state, d.params.ion_mode.lower())
+        if r.charge_state != 1:
+            continue
 
-        _adduct_list = adduct_double_list if r.charge_state == 1 else adduct_single_list
+        mol_mass = _calc_exact_mol_mass(r.mz, d.params.ion_mode.lower())
 
         # for every possible adduct
-        for i, adduct in enumerate(_adduct_list):
-            m = (mol_mass * _adduct_list[i]['m'] + _adduct_list[i]['mass']) / _adduct_list[i]['charge']
-            v = np.logical_and(np.abs(d.roi_mz_seq - m) < mz_tol, np.abs(d.roi_rt_seq - r.rt) < rt_tol, roi_to_label)
-            v = np.where(v)[0]
+        for i, adduct in enumerate(adduct_list):
+            m = (mol_mass * adduct['m'] + adduct['mass']) / adduct['charge']
+            _v = np.logical_and(roi_to_label, np.abs(d.roi_rt_seq - r.rt) < rt_tol)
+
+            v = np.where(np.logical_and(_v, np.abs(d.roi_mz_seq - m) < mz_tol))[0]
 
             if len(v) == 0:
                 continue
@@ -86,7 +88,8 @@ def annotate_adduct(d):
                 r.adduct_child_roi_id.append(d.rois[v].id)
 
         if len(r.adduct_child_roi_id) > 0:
-            r.adduct_type = default_single_adduct if r.charge_state == 1 else default_double_adduct
+            roi_to_label[idx] = False
+            r.adduct_type = default_single_adduct
             r.adduct_group_no = group_no
             group_no += 1
 
@@ -95,28 +98,18 @@ def annotate_adduct(d):
             r.adduct_type = default_single_adduct if r.charge_state == 1 else default_double_adduct
 
 
-def _calc_exact_mol_mass(mz, charge_state, ion_mode):
+def _calc_exact_mol_mass(mz, ion_mode):
     if ion_mode == 'positive':
-        if charge_state == 1:
-            return mz - 1.00727645223
-        else:
-            return mz * 2.0 - 2.01455290446
+        return mz - 1.00727645223
     else:
-        if charge_state == 1:
-            return mz + 1.00727645223
-        else:
-            return mz * 2.0 + 2.01455290446
+        return mz + 1.00727645223
 
 
 def _pop_adduct_list(_adduct_pos, _adduct_neg, ion_mode):
     if ion_mode == 'positive':
-        copy_1 = _adduct_pos.copy()
-        copy_2 = _adduct_pos.copy()
-        return copy_1[1:], copy_2[:14] + copy_2[15:]  # Remove M+H and M+2H
+        return _adduct_pos[1:]
     else:
-        copy_1 = _adduct_neg.copy()
-        copy_2 = _adduct_neg.copy()
-        return copy_1[1:], copy_2[:12] + copy_2[13:]  # Remove M-H and M-2H
+        return _adduct_neg[1:]
 
 
 _adduct_pos = [
@@ -126,19 +119,7 @@ _adduct_pos = [
     {'name': '[M+NH4]+', 'm': 1, 'charge': 1, 'mass': 18.03382555335},
     {'name': '[M+H-H2O]+', 'm': 1, 'charge': 1, 'mass': -17.0032882318},
     {'name': '[M+H-2H2O]+', 'm': 1, 'charge': 1, 'mass': -35.01385291583},
-    {'name': '[M+H-3H2O]+', 'm': 1, 'charge': 1, 'mass': -53.02441759986},
-
-    {'name': '[2M+H]+', 'm': 2, 'charge': 1, 'mass': 1.00727645223},
-    {'name': '[2M+Na]+', 'm': 2, 'charge': 1, 'mass': 22.989220702},
-    {'name': '[2M+K]+', 'm': 2, 'charge': 1, 'mass': 38.9631579064},
-    {'name': '[2M+NH4]+', 'm': 2, 'charge': 1, 'mass': 18.03382555335},
-    {'name': '[2M+H-H2O]+', 'm': 2, 'charge': 1, 'mass': -17.0032882318},
-    {'name': '[2M+H-2H2O]+', 'm': 2, 'charge': 1, 'mass': -35.01385291583},
-    {'name': '[2M+H-3H2O]+', 'm': 2, 'charge': 1, 'mass': -53.02441759986},
-
-    {'name': '[M+2H]2+', 'm': 1, 'charge': 2, 'mass': 2.01455290446},
-    {'name': '[M+Ca]2+', 'm': 1, 'charge': 2, 'mass': 39.961493703},
-    {'name': '[M+Fe]2+', 'm': 1, 'charge': 2, 'mass': 55.93383917}
+    {'name': '[M+H-3H2O]+', 'm': 1, 'charge': 1, 'mass': -53.02441759986}
 ]
 
 _adduct_neg = [
@@ -147,16 +128,5 @@ _adduct_neg = [
     {'name': '[M+Br]-', 'm': 1, 'charge': 1, 'mass': 78.91778902},
     {'name': '[M+FA]-', 'm': 1, 'charge': 1, 'mass': 44.99710569137},
     {'name': '[M+Ac]-', 'm': 1, 'charge': 1, 'mass': 59.01275575583},
-    {'name': '[M-H-H2O]-', 'm': 1, 'charge': 1, 'mass': -19.01784113626},
-
-    {'name': '[2M-H]-', 'm': 2, 'charge': 1, 'mass': -1.00727645223},
-    {'name': '[2M+Cl]-', 'm': 2, 'charge': 1, 'mass': 34.968304102},
-    {'name': '[2M+Br]-', 'm': 2, 'charge': 1, 'mass': 78.91778902},
-    {'name': '[2M+FA]-', 'm': 2, 'charge': 1, 'mass': 44.99710569137},
-    {'name': '[2M+Ac]-', 'm': 2, 'charge': 1, 'mass': 59.01275575583},
-    {'name': '[2M-H-H2O]-', 'm': 2, 'charge': 1, 'mass': -19.01784113626},
-
-    {'name': '[M-2H]2-', 'm': 1, 'charge': 2, 'mass': -2.01455290446},
-    {'name': '[M-H+Cl]2-', 'm': 1, 'charge': 2, 'mass': 33.96157622977},
-    {'name': '[M-H+Br]2-', 'm': 1, 'charge': 2, 'mass': 77.91106114777},
+    {'name': '[M-H-H2O]-', 'm': 1, 'charge': 1, 'mass': -19.01784113626}
 ]

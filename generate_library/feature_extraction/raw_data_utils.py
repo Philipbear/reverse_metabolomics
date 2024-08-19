@@ -339,7 +339,7 @@ class MSData:
         else:
             plt.show()
 
-    def output_single_file(self, out_dir=None):
+    def output_single_file(self, save=True, out_dir=None):
         """
         Function to generate a report for rois.
         """
@@ -347,39 +347,54 @@ class MSData:
         result = []
 
         for roi in self.rois:
-            iso_dist = write_peaks(roi.isotope_mz_seq, roi.isotope_int_seq)
 
-            ms2 = ""
-            best_ms2_scan_idx = ""
-            all_ms2_scan_idx = "" if not roi.ms2_seq else str([ms2.scan for ms2 in roi.ms2_seq])[1:-1]
-            if roi.best_ms2 is not None:
-                ms2 = write_peaks(roi.best_ms2.peaks[:, 0], roi.best_ms2.peaks[:, 1])
-                best_ms2_scan_idx = roi.best_ms2.scan
+            # # output for visualization
+            # iso_dist = write_peaks(roi.isotope_mz_seq, roi.isotope_int_seq)
+            #
+            # ms2 = ""
+            # best_ms2_scan_idx = ""
+            # all_ms2_scan_idx = "" if not roi.ms2_seq else str([ms2.scan + 1 for ms2 in roi.ms2_seq])[1:-1]
+            # if roi.best_ms2 is not None:
+            #     ms2 = write_peaks(roi.best_ms2.peaks[:, 0], roi.best_ms2.peaks[:, 1])
+            #     best_ms2_scan_idx = roi.best_ms2.scan + 1
+            #
+            # temp = [roi.id, roi.mz.__round__(4), roi.rt.__round__(3), roi.length, roi.rt_seq[0],
+            #         roi.rt_seq[-1], roi.peak_area, roi.peak_height, roi.gaussian_similarity.__round__(2),
+            #         roi.noise_level.__round__(2), roi.asymmetry_factor.__round__(2), roi.charge_state,
+            #         roi.is_isotope, str(roi.isotope_id_seq)[1:-1], iso_dist,
+            #         roi.adduct_type, int(roi.adduct_group_no) if roi.adduct_group_no is not None else "",
+            #         best_ms2_scan_idx, ms2, all_ms2_scan_idx]
 
-            temp = [roi.id, roi.mz.__round__(4), roi.rt.__round__(3), roi.length, roi.rt_seq[0],
-                    roi.rt_seq[-1], roi.peak_area, roi.peak_height, roi.gaussian_similarity.__round__(2),
-                    roi.noise_level.__round__(2), roi.asymmetry_factor.__round__(2), roi.charge_state, roi.is_isotope,
-                    str(roi.isotope_id_seq)[1:-1], iso_dist,
-                    roi.adduct_type, roi.adduct_group_no,
-                    best_ms2_scan_idx, ms2, all_ms2_scan_idx]
+            iso_peaks = np.column_stack((roi.isotope_mz_seq, roi.isotope_int_seq))
+
+            temp = [roi.id, roi.mz, roi.rt, roi.length, roi.rt_seq[0],
+                    roi.rt_seq[-1], roi.peak_area, roi.peak_height, roi.charge_state,
+                    roi.is_isotope, roi.isotope_id_seq, iso_peaks,
+                    roi.adduct_type,
+                    int(roi.adduct_group_no) if roi.adduct_group_no is not None else None,
+                    roi.best_ms2.scan + 1 if roi.best_ms2 is not None else None,
+                    roi.best_ms2.peaks if roi.best_ms2 is not None else None,
+                    [ms2.scan + 1 for ms2 in roi.ms2_seq] if roi.ms2_seq else None]
 
             result.append(temp)
 
         # convert result to a pandas dataframe
         columns = ["ID", "m/z", "RT", "length", "RT_start", "RT_end", "peak_area", "peak_height",
-                   "Gaussian_similarity", "noise_level", "asymmetry_factor", "charge", "is_isotope",
-                   "isotope_IDs", "isotopes", "adduct", "adduct_group",
+                   "charge", "is_isotope", "isotope_IDs", "isotopes", "adduct", "adduct_group",
                    "best_MS2_scan_idx", "MS2", "all_MS2_scan_idx"]
 
         df = pd.DataFrame(result, columns=columns)
 
         # save
-        if not out_dir:
-            out_dir = self.params.single_file_dir
+        if save:
+            if not out_dir:
+                out_dir = self.params.single_file_dir
 
-        os.makedirs(out_dir, exist_ok=True)
-        path = os.path.join(out_dir, self.file_name + ".tsv")
-        df.to_csv(path, sep="\t", index=False)
+            os.makedirs(out_dir, exist_ok=True)
+            path = os.path.join(out_dir, self.file_name + "_feature_table.tsv")
+            df.to_csv(path, sep="\t", index=False)
+
+        return df
 
     def get_eic_data(self, target_mz, target_rt=None, mz_tol=0.005, rt_tol=0.3, rt_range=None):
         """

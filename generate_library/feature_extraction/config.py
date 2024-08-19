@@ -29,10 +29,6 @@ class Params:
         self.roi_gap = 30  # Gap within a feature, default is 30 (i.e. 30 consecutive scans without signal), integer
         self.ppr = 0.8  # Peak peak correlation threshold for feature grouping, default is 0.8
 
-        # Parameters for output
-        self.output_single_file = False  # Whether to output the processed individual files to a csv file
-        self.output_aligned_file = False  # Whether to output aligned features to a csv file
-
     def set_default(self, ms_type, ion_mode):
         """
         Set the parameters by the type of MS.
