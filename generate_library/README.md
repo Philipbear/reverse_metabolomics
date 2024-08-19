@@ -1,15 +1,17 @@
 
-This is to generate the library for reverse metabolomics.
+This is to generate the library for reverse metabolomics in batch.
 
 - Input:
-  - **mzML** file
-  - **csv** file, compound list
+  - **mzML** files
+  - **csv** files (compound list)
 
 - Output:
-  - library **tsv** file
+  - one library **tsv** file
 
 
-### Workflow
-1. feature extraction & correlation
+```
+Note:
+mzML file and csv file should have the same name. (e.g., `sample.mzML` and `sample.csv`)
+```
 
 

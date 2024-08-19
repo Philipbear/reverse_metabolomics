@@ -54,7 +54,7 @@ def feature_extraction_single(file_path, mass_detect_int_tol=5e4,
 
 
 def init_config(ion_mode="positive",
-                mz_tol_ms1=0.01, mz_tol_ms2=0.015,
+                mz_tol_ms1=0.005, mz_tol_ms2=0.015,
                 peak_cor_rt_tol=0.025, min_ppc=0.8,
                 mass_detect_int_tol=5e4):
     # init
@@ -62,11 +62,11 @@ def init_config(ion_mode="positive",
 
     ##########################
     # MS data acquisition
-    config.ion_mode = ion_mode  # Ionization mode, "positive" or "negative", character string
+    config.ion_mode = ion_mode  # Ionization mode, "positive" or "negative", default is "positive"
     config.mz_tol_ms1 = mz_tol_ms1  # m/z tolerance for MS1, default is 0.01
     config.mz_tol_ms2 = mz_tol_ms2  # m/z tolerance for MS2, default is 0.015
-    config.int_tol = mass_detect_int_tol  # Intensity tolerance, default is 30000 for Orbitrap and 1000 for other instruments, integer
+    config.int_tol = mass_detect_int_tol  # Mass detection intensity tolerance, default is 5e4
     config.ppr = min_ppc  # Peak-peak correlation threshold for feature grouping, default is 0.8
-    config.peak_cor_rt_tol = peak_cor_rt_tol  # RT tolerance for peak correlation, default is 0.2
+    config.peak_cor_rt_tol = peak_cor_rt_tol  # RT tolerance for peak correlation, default is 0.025
 
     return config

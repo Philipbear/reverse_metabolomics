@@ -1,7 +1,7 @@
 from msbuddy import assign_subformula
 
 
-def calc_ms2_explanation(row, explanation_cutoff=0.60):
+def filter_by_ms2_explanation(row, explanation_cutoff=0.60):
     """
     Calculate the MS2 explanation
     """

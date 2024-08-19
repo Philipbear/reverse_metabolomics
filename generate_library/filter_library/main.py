@@ -1,9 +1,9 @@
 from .merge_df import merge_compound_feature_tables
 from .filter_df import filter_df
-# from .write_library import write_library
+from .write_library import write_library
 
 
-def filter_library(compound_df, feature_df):
+def filter_library(compound_df, feature_df, data_collector, file_name):
     """
     Filter the library based on the compound and feature DataFrames.
     """
@@ -13,8 +13,7 @@ def filter_library(compound_df, feature_df):
     # Filter the merged DataFrame
     df = filter_df(df)
 
-    # # Write the filtered library (dataframe to be uploaded to GNPS)
-    # library_df = write_library(df)
-    library_df = None
+    # Write the filtered library (dataframe to be uploaded to GNPS)
+    library_df = write_library(df, data_collector, file_name)
 
     return df, library_df

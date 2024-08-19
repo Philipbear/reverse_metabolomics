@@ -1,16 +1,24 @@
 import pandas as pd
+import numpy as np
 
 
-def remove_smiles_with_empty_ms2(df):
+def remove_smiles_with_empty_valid_ms2(df):
     """
     Remove chemicals with empty MS2
     """
     unique_smiles = df['SMILES'].unique()
     for smiles in unique_smiles:
         mask = df['SMILES'] == smiles
-        if pd.isnull(df.loc[mask, 'best_MS2_scan_idx']).all():
+
+        _selected = df.loc[mask, 'selected']
+        _best_MS2_scan_idx = df.loc[mask, 'best_MS2_scan_idx']
+        _bool = _selected & pd.notnull(_best_MS2_scan_idx)
+        if not _bool.any():
             df.loc[mask, 'selected'] = False
-            df.loc[mask, 'discard_reason'] = 'No MS2 collected'
+            df.loc[mask, 'discard_reason'] = np.where(
+                df.loc[mask, 'discard_reason'] == '', 'No valid MS2',
+                df.loc[mask, 'discard_reason'] + '; No valid MS2'
+            )
 
     return df
 
