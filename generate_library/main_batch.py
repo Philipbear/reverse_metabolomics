@@ -8,7 +8,7 @@ from filter_library import filter_library
 
 
 def main_batch(file_dir,
-               out_dir='.',
+               out_dir='./output',
                data_collector='Minions',
                plot=True
                ):
@@ -72,5 +72,5 @@ def main_batch(file_dir,
 
 
 if __name__ == '__main__':
-    main_batch('/Users/shipei/Documents/projects/reverse_metabolomics/reverse_metabolomics/filter_library/input')
+    main_batch('./input')
 

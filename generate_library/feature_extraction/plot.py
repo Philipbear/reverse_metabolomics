@@ -65,7 +65,7 @@ def plot_all_eic(df, file_path, out_dir, plots_per_page=5):
                     #         bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, pad=0),
                     #         color=eic_colors[row['t_adduct']])  # Use the same color for the text
 
-            ax.legend(fontsize=8, loc='upper right')
+            ax.legend(fontsize=8, loc='upper left')
             ax.tick_params(axis='both', which='major', labelsize=8)
 
             plot_count += 1
@@ -143,7 +143,7 @@ def plot_single_ms2(ax, mz_arr, int_arr, name, adduct, precursor_mz, rt, scan_id
     """
     Plot single MS2 spectrum on a given axes
     """
-    ax.vlines(mz_arr, 0, int_arr, color='0.8', linewidth=1)
+    ax.vlines(mz_arr, 0, int_arr, color='0.4', linewidth=1)
     ax.set_xlabel('m/z')
     ax.set_ylabel('Intensity')
     ax.set_title(f'{name} {adduct}\nm/z {precursor_mz:.4f}, RT: {rt:.2f} min\nScan {scan_idx}, Explained {explained_intensity:.2f}',
