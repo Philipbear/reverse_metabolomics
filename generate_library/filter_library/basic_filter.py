@@ -27,7 +27,7 @@ def remove_doubly_charged_ions(row):
     """
     Remove matches to doubly charged ions
     """
-    if row['selected'] and row['charge'] == 2: #and len(row['isotopes']) > 2:
+    if row['selected'] and row['charge'] == 2 and len(row['isotopes']) > 2:
         row['selected'] = False
         row['discard_reason'] = 'Matched to doubly charged ion'
     return row

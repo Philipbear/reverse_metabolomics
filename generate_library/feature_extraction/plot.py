@@ -48,9 +48,7 @@ def plot_all_eic(df, file_path, out_dir, plots_per_page=5):
             if '[M+H-3H2O]+' in adduct:
                 adducts_to_plot.update(['[M+H]+', '[M+H-H2O]+', '[M+H-2H2O]+', '[M+H-3H2O]+'])
             if '[M+NH4]+' in adduct:
-                adducts_to_plot.update(['[M+H]+', '[M+NH4]+', '[M-H2O+NH4]+'])
-            if '[M-H2O+NH4]+' in adduct:
-                adducts_to_plot.update(['[M+H-H2O]+', '[M+NH4]+'])
+                adducts_to_plot.update(['[M+H]+', '[M+NH4]+'])
             adducts_to_plot.add(adduct)  # Always include the original adduct
 
         # For all other cases, always include [M+H]+ and [M+H-H2O]+
@@ -119,7 +117,7 @@ def plot_all_eic(df, file_path, out_dir, plots_per_page=5):
 
                         # Add cross if not selected
                         if not row.get('selected', True):  # Default to True if 'selected' column doesn't exist
-                            ax.plot(ms2_rt, intensity, 'x', color='black', markersize=3, linewidth=0.5)
+                            ax.plot(ms2_rt, intensity, 'x', color='black', markersize=4.5, linewidth=0.4)
 
             ax.tick_params(axis='both', which='major', labelsize=8)
             ax.legend(fontsize=6, loc='upper right', bbox_to_anchor=(1, 1), ncol=1)
