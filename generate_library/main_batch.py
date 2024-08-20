@@ -46,6 +46,9 @@ def main_batch(file_dir,
         feature_df = feature_extraction_single(file_path=mzml, save=False)
 
         cmpd_df = all_cmpd_df[all_cmpd_df['unique_sample_id'] == _mzml].reset_index(drop=True).copy()
+        if len(cmpd_df) == 0:
+            print('No compound information found for', _mzml)
+            continue
 
         # Filter library
         print('Filtering library...')
