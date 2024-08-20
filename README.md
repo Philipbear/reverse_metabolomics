@@ -1,10 +1,14 @@
 # Reverse metabolomics
 
+This repository contains the workflow for reverse metabolomics library generation.
+
 All the required codes are included in this GitHub repository, such that further updates can be easily tracked.
 
-The entire SOP for reverse metabolomics is [available here](https://docs.google.com/document/d/1jvLTQ_gbU6-ljOjG2v-6W_8KIpOSBRT5cJthqHA_TB0/edit?usp=sharing) (may need updated).
+The entire SOP for reverse metabolomics is [available here](https://docs.google.com/document/d/1jvLTQ_gbU6-ljOjG2v-6W_8KIpOSBRT5cJthqHA_TB0/edit?usp=sharing) (may need updates).
 
 <img src="image/reverse_metabolomics.png" alt="Reverse Metabolomics Workflow" width="750"/>
+
+----------------
 
 ### generate_smiles
 This is used to generate SMILES data using reactants.
