@@ -34,9 +34,17 @@ def main_batch(file_dir,
         cmpd_df = calculate_cmpd_mz(csv)
         all_cmpd_df = pd.concat([all_cmpd_df, cmpd_df])
 
+    # Get unique mzmls
+    unique_mzmls = all_cmpd_df['unique_sample_id'].unique()
+
     # Load the mzml file
     all_library_df = pd.DataFrame()
     for _mzml in mzml_files:
+
+        if _mzml not in unique_mzmls:
+            print(f'{_mzml} does not have target compound list. Skipped.')
+            continue
+
         print('Processing', _mzml)
         mzml = os.path.join(file_dir, _mzml)
 
@@ -46,9 +54,6 @@ def main_batch(file_dir,
         feature_df = feature_extraction_single(file_path=mzml, save=False)
 
         cmpd_df = all_cmpd_df[all_cmpd_df['unique_sample_id'] == _mzml].reset_index(drop=True).copy()
-        if len(cmpd_df) == 0:
-            print('No compound information found for', _mzml)
-            continue
 
         # Filter library
         print('Filtering library...')

@@ -153,6 +153,8 @@ def plot_all_ms2(df, file_path, out_dir):
         for i, row in df.iterrows():
             if not pd.isnull(row['best_MS2_scan_idx']):
                 this_scan = d.scans[int(row['best_MS2_scan_idx']) - 1]
+                if this_scan is None or this_scan.peaks is None:
+                    continue
                 mz_arr, int_arr = this_scan.peaks[:, 0], this_scan.peaks[:, 1]
 
                 ax = axs[plot_count // 2, plot_count % 2]
