@@ -5,7 +5,7 @@ This is to generate the library for reverse metabolomics in batch.
   - **csv** files (compound list)
 
 - Output:
-  - one library **tsv** file
+  - one library **tsv** file (to be uploaded to GNPS)
   - `metadata` folder
     - entire metadata table for each mzML
     - EIC plots for each compound in each mzML
