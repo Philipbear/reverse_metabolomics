@@ -1,6 +1,4 @@
-
 This is to generate the library for reverse metabolomics in batch.
-
 
 - Input:
   - **mzML** files
@@ -25,4 +23,4 @@ pip install -r requirements.txt
 4. `run.py` is the main script to run the workflow.
 Remember to modify the `data_collector` in the function, or all the data will be collected by `Minions`! Yay!
 
-<img src="../image/_Minions_.png" alt="Reverse Metabolomics Workflow" width="500"/>
+<img src="../image/_Minions_.png" alt="Reverse Metabolomics Workflow" width="700"/>
