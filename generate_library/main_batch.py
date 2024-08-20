@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-from feature_extraction import feature_extraction_single, plot_all_ms2, plot_all_eic
+from feature_extraction import feature_extraction_single, plot_all_ms2, plot_all_eic, plot_mz_rt
 from cmpd import calculate_cmpd_mz
 from filter_library import filter_library
 
@@ -66,5 +66,9 @@ def main_batch(file_dir,
             # Plot all EICs
             print('Plotting all EICs...')
             plot_all_eic(df, mzml, metadata_dir)
+
+            # Plot mz-rt scatter plot
+            print('Plotting mz-rt scatter plot...')
+            plot_mz_rt(df, mzml_name, metadata_dir)
 
     all_library_df.to_csv(f'{out_dir}/all_library.tsv', sep='\t', index=False, na_rep='N/A')

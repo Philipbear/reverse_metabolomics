@@ -205,3 +205,65 @@ def plot_single_ms2(ax, mz_arr, int_arr, name, adduct, precursor_mz, rt, scan_id
     ax.set_title(title, fontsize=8)
     ax.tick_params(axis='both', which='major', labelsize=6)
     ax.set_xlim(right=precursor_mz * 1.025)
+
+
+def plot_mz_rt(df, mzml_name, out_dir):
+    """
+    Plot m/z vs RT for all compounds in the dataframe, handling multiple labels per spectrum
+    """
+    df = df[~pd.isnull(df['best_MS2_scan_idx'])].reset_index(drop=True)
+
+    # Function to determine status, prioritizing 'Selected'
+    def get_status(reasons):
+        if pd.isnull(reasons) or reasons == '':
+            return 'Selected'
+        reasons_list = reasons.split(';')
+        return 'Selected' if 'Selected' in reasons_list else reasons_list[0]
+
+    # Apply the function to create the 'status' column
+    df['status'] = df['discard_reason'].apply(get_status)
+
+    # Sort by status, first 'Selected', then others
+    df['status_sort'] = df['status'].map({'Selected': 0}).fillna(1)
+    df = df.sort_values(['status_sort', 'status']).drop('status_sort', axis=1)
+
+    # Dereplicate the best_MS2_scan_idx column
+    df = df.drop_duplicates(subset='best_MS2_scan_idx', keep='first')
+
+    # Define a set of distinct colors
+    distinct_colors = {
+        'Selected': '#1f77b4',
+        'No core adduct': '#d62728',
+        'MS2 explanation below cutoff': '#2ca02c',
+        'Matched to doubly charged ion': '#ff7f0e',
+        'Other': '#9467bd'  # For any other status that might appear
+    }
+
+    # Create the plot
+    plt.figure(figsize=(12, 8))
+
+    for status in df['status'].unique():
+        subset = df[df['status'] == status]
+        color = distinct_colors.get(status, distinct_colors['Other'])
+        plt.scatter(subset['RT'], subset['m/z'], c=[color], label=status, alpha=0.7)
+
+    plt.xlabel('RT (min)')
+    plt.ylabel('m/z')
+    plt.title('m/z vs Retention Time')
+
+    # Adjust the plot area to make room for the legend
+    plt.subplots_adjust(right=0.75)
+
+    # Place the legend outside the plot area
+    plt.legend(title='Status', bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    # Save the plot
+    output_path = f"{out_dir}/{mzml_name}_mz_rt_plot.svg"
+    plt.savefig(output_path, transparent=True, bbox_inches='tight')
+    plt.close()
+
+    print(f"m/z vs RT plot saved to {output_path}")
+
+    # Print some statistics for verification
+    print(f"Total number of data points: {len(df)}")
+    print(df['status'].value_counts())
