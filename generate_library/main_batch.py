@@ -68,8 +68,3 @@ def main_batch(file_dir,
             plot_all_eic(df, mzml, metadata_dir)
 
     all_library_df.to_csv(f'{out_dir}/all_library.tsv', sep='\t', index=False, na_rep='N/A')
-
-
-if __name__ == '__main__':
-    main_batch('./input')
-

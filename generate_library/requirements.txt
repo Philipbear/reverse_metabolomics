@@ -1,0 +1,7 @@
+pandas
+molmass
+numpy
+scipy
+matplotlib
+pyteomics
+msbuddy

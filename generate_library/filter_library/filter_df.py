@@ -1,4 +1,3 @@
-import pandas as pd
 from .basic_filter import remove_smiles_with_empty_valid_ms2, remove_doubly_charged_ions, remove_isotopes
 from .ms2_explanation_filter import filter_by_ms2_explanation
 from .core_adduct_filter import core_adduct_filter

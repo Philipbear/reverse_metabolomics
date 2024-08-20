@@ -3,7 +3,6 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import pandas as pd
-from datetime import datetime
 
 from .config import Params
 from .peak_detection import find_rois, cut_roi
@@ -28,7 +27,6 @@ class MSData:
         self.file_name = None  # File name of the raw data without extension
         self.roi_mz_seq = None  # m/z of all ROIs
         self.roi_rt_seq = None  # Retention time of all ROIs
-        self.start_time = None  # Start acquisition time of the raw data
 
     def read_raw_data(self, file_name, params, read_ms2=True, centroid=True):
         """
@@ -53,8 +51,6 @@ class MSData:
                 raise ValueError("Unsupported raw data format. Raw data must be in mzML or mzXML.")
 
             self.file_name = os.path.splitext(os.path.basename(file_name))[0]
-
-            self.start_time = get_start_time(file_name)
 
             if ext.lower() == ".mzml":
                 with mzml.MzML(file_name) as reader:
@@ -880,24 +876,6 @@ def find_best_ms2(ms2_seq):
             return ms2_seq[max(range(len(total_ints)), key=total_ints.__getitem__)]
     else:
         return None
-
-
-def get_start_time(file_name):
-    """
-    Function to get the start time of the raw data.
-
-    Parameters
-    ----------
-    file_name : str
-        Absolute path of the raw data.
-    """
-
-    with open(file_name, "rb") as f:
-        for l in f:
-            l = str(l)
-            if "startTimeStamp" in str(l):
-                t = l.split("startTimeStamp")[1].split('"')[1]
-                return datetime.strptime(t, "%Y-%m-%dT%H:%M:%SZ")
 
 
 def write_peaks(mz_arr, intensity_arr):

@@ -136,7 +136,7 @@ def plot_all_eic(df, file_path, out_dir, plots_per_page=5):
 
 def plot_all_ms2(df, file_path, out_dir):
     """
-    Plot all MS2 spectra on a PDF with a 5x2 layout per page
+    Plot all MS2 spectra on a PDF with a 5x2 layout per page, including unselected spectra
     """
     config = init_config(mass_detect_int_tol=0)
     d = MSData()
@@ -151,14 +151,19 @@ def plot_all_ms2(df, file_path, out_dir):
         plot_count = 0
 
         for i, row in df.iterrows():
-            if row['selected'] and not pd.isnull(row['best_MS2_scan_idx']):
+            if not pd.isnull(row['best_MS2_scan_idx']):
                 this_scan = d.scans[int(row['best_MS2_scan_idx']) - 1]
                 mz_arr, int_arr = this_scan.peaks[:, 0], this_scan.peaks[:, 1]
 
                 ax = axs[plot_count // 2, plot_count % 2]
+
+                # Create selection status and discard reason
+                status = "Selected" if row['selected'] else "Unselected"
+                discard_reason = row['discard_reason'] if not pd.isnull(row['discard_reason']) else None
+
                 plot_single_ms2(ax, mz_arr, int_arr, row['compound_name'], row['t_adduct'],
                                 this_scan.precursor_mz, row['RT'], row['best_MS2_scan_idx'],
-                                row['ms2_explained_intensity'])
+                                row['ms2_explained_intensity'], status, discard_reason)
 
                 plot_count += 1
 
@@ -181,14 +186,22 @@ def plot_all_ms2(df, file_path, out_dir):
     print(f"MS2 spectra saved to {pdf_path}")
 
 
-def plot_single_ms2(ax, mz_arr, int_arr, name, adduct, precursor_mz, rt, scan_idx, explained_intensity):
+def plot_single_ms2(ax, mz_arr, int_arr, name, adduct, precursor_mz, rt, scan_idx, explained_intensity, status,
+                    discard_reason=None):
     """
     Plot single MS2 spectrum on a given axes
     """
     ax.vlines(mz_arr, 0, int_arr, color='0.4', linewidth=1)
     ax.set_xlabel('m/z')
     ax.set_ylabel('Intensity')
-    ax.set_title(f'{name} {adduct}\nm/z {precursor_mz:.4f}, RT: {rt:.2f} min\nScan {scan_idx}, Explained {explained_intensity:.2f}',
-                 fontsize=8)
+
+    title = f'{name} - {adduct}\n'
+    title += f'm/z {precursor_mz:.4f}, RT: {rt:.2f} min, Scan {scan_idx}\n'
+    title += f'Explained: {explained_intensity:.2f}, Status: {status}'
+
+    if discard_reason:
+        title += f'\nDiscard reason: {discard_reason}'
+
+    ax.set_title(title, fontsize=8)
     ax.tick_params(axis='both', which='major', labelsize=6)
     ax.set_xlim(right=precursor_mz * 1.025)
