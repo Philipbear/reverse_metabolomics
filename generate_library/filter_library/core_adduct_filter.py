@@ -7,7 +7,7 @@ def core_adduct_filter(df, core_adduct_ls=None, rt_tol=0.025):
     For each SMILES and grouped RT, check if core adducts are present
     """
     if core_adduct_ls is None:
-        core_adduct_ls = ['[M+H]+', '[M+NH4]+', '[M+H-H2O]+', '[M+H-2H2O]+']
+        core_adduct_ls = ['[M+H]+', '[M+NH4]+', '[M-H2O+NH4]+', '[M+H-H2O]+', '[M+H-2H2O]+']
 
     # Find all unique SMILES
     unique_smiles = df['SMILES'].unique()

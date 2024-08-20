@@ -10,8 +10,7 @@ from filter_library import filter_library
 def main_batch(file_dir,
                out_dir='./output',
                data_collector='Minions',
-               plot=True
-               ):
+               plot=True):
     """
     Process a batch of mzML files and csv files.
     """

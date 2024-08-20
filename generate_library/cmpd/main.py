@@ -7,6 +7,7 @@ _adduct_pos = [
     {'name': '[M+Na]+', 'm': 1, 'charge': 1, 'mass': 22.989220702},
     {'name': '[M+K]+', 'm': 1, 'charge': 1, 'mass': 38.9631579064},
     {'name': '[M+NH4]+', 'm': 1, 'charge': 1, 'mass': 18.03382555335},
+    {'name': '[M-H2O+NH4]+', 'm': 1, 'charge': 1, 'mass': 0.023260869},
     {'name': '[M+H-H2O]+', 'm': 1, 'charge': 1, 'mass': -17.0032882318},
     {'name': '[M+H-2H2O]+', 'm': 1, 'charge': 1, 'mass': -35.01385291583},
     {'name': '[M+H-3H2O]+', 'm': 1, 'charge': 1, 'mass': -53.02441759986}
