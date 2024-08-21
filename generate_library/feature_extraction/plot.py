@@ -209,10 +209,11 @@ def plot_single_ms2(ax, mz_arr, int_arr, name, adduct, precursor_mz, rt, scan_id
     ax.set_xlim(right=precursor_mz * 1.025)
 
 
-def plot_mz_rt(df, mzml_name, out_dir):
+def plot_mz_rt(feature_df, df, mzml_name, out_dir):
     """
     Plot m/z vs RT for all compounds in the dataframe, handling multiple labels per spectrum
     """
+    feature_df = feature_df[~pd.isnull(feature_df['best_MS2_scan_idx'])].reset_index(drop=True)
     df = df[~pd.isnull(df['best_MS2_scan_idx'])].reset_index(drop=True)
 
     # Function to determine status, prioritizing 'Selected'
@@ -238,12 +239,17 @@ def plot_mz_rt(df, mzml_name, out_dir):
         'No core adduct': '#d62728',
         'MS2 explanation below cutoff': '#2ca02c',
         'Matched to doubly charged ion': '#ff7f0e',
-        'Other': '#9467bd'  # For any other status that might appear
+        'Other': '#9467bd',  # For any other status that might appear
+        'm/z unmatched to target list': '#D3D3D3'  # Light grey for unmatched
     }
 
     # Create the plot
     plt.figure(figsize=(12, 8))
 
+    # Plot all MS2 data points from feature_df
+    plt.scatter(feature_df['RT'], feature_df['m/z'], c='#D3D3D3', label='m/z unmatched to target list', alpha=0.7)
+
+    # Plot data points from df, overwriting the ones that match
     for status in df['status'].unique():
         subset = df[df['status'] == status]
         color = distinct_colors.get(status, distinct_colors['Other'])
@@ -267,5 +273,8 @@ def plot_mz_rt(df, mzml_name, out_dir):
     print(f"m/z vs RT plot saved to {output_path}")
 
     # Print some statistics for verification
-    print(f"Total number of data points: {len(df)}")
+    print(f"Total number of data points in feature_df: {len(feature_df)}")
+    print(f"Total number of data points in df: {len(df)}")
+    print(f"Number of unmatched data points: {len(feature_df) - len(df)}")
     print(df['status'].value_counts())
+

@@ -25,11 +25,9 @@ def feature_extraction_single(file_path, mass_detect_int_tol=5e4,
     d = MSData()
 
     # read raw data
-    print('Reading raw data...')
     d.read_raw_data(file_path, config)
 
     # detect region of interests (ROIs)
-    print('Detecting ROIs...')
     d.find_rois()
 
     # cut ROIs
