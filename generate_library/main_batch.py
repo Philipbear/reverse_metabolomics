@@ -67,20 +67,20 @@ def main_batch(file_dir,
         df.to_csv(out_df_path, sep='\t', index=False)
 
         if plot:
-            # Plot all MS2 spectra
-            # print('Plotting all MS2 spectra...')
-            # plot_all_ms2(df, mzml, metadata_dir)
-            #
-            # # Plot all EICs
-            # print('Plotting all EICs...')
-            # plot_all_eic(df, mzml, metadata_dir)
-            #
-            # # Plot mz-rt scatter plot
-            # print('Plotting mz-rt scatter plot...')
-            # plot_mz_rt(feature_df, df, mzml_name, metadata_dir)
-
             # Create MS2 network
             print('Creating molecular network...')
             create_ms2_network(feature_df, df, mzml, metadata_dir)
+
+            # Plot all MS2 spectra
+            print('Plotting all MS2 spectra...')
+            plot_all_ms2(df, mzml, metadata_dir)
+
+            # Plot all EICs
+            print('Plotting all EICs...')
+            plot_all_eic(df, mzml, metadata_dir)
+
+            # Plot mz-rt scatter plot
+            print('Plotting mz-rt scatter plot...')
+            plot_mz_rt(feature_df, df, mzml_name, metadata_dir)
 
     all_library_df.to_csv(f'{out_dir}/all_library.tsv', sep='\t', index=False, na_rep='N/A')

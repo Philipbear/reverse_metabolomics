@@ -26,6 +26,9 @@ def create_ms2_network(feature_df, df, mzml_file, out_dir):
     # Sort by status, first 'Selected', then others
     combined_df['status_sort'] = combined_df['status'].map({'Selected': 0}).fillna(1)
     combined_df = combined_df.sort_values(['status_sort', 'status']).drop('status_sort', axis=1)
+    combined_df['best_MS2_scan_idx'] = combined_df['best_MS2_scan_idx'].astype(int)
+    # dereplicate
+    combined_df = combined_df.drop_duplicates(subset='best_MS2_scan_idx', keep='first')
 
     # Create Spectrum objects with preprocessed spectra
     spectra = []
@@ -57,15 +60,17 @@ def create_ms2_network(feature_df, df, mzml_file, out_dir):
     # Create network
     G = nx.Graph()
 
-    # Add nodes
+    # Add all nodes first
     for spectrum in spectra:
         G.add_node(spectrum.get('spectrum_id'), status=spectrum.get('status'))
 
     # Add edges
     for (i, score) in enumerate(scores):
-        if score is not None and score.score is not None:
-            if score.score >= 0.7 and score.matches >= 6:
-                G.add_edge(score.reference_spectrum_id, score.query_spectrum_id, weight=score.score)
+        if score[0].get('spectrum_id') <= score[1].get('spectrum_id'):
+            continue
+        if score[2][0] >= 0.7 and score[2][1] >= 6:
+            node1, node2 = score[0].get('spectrum_id'), score[1].get('spectrum_id')
+            G.add_edge(node1, node2, weight=score[2][0])
 
     print("Number of nodes in the graph:", len(G.nodes()))
     print("Number of edges in the graph:", len(G.edges()))
@@ -78,21 +83,38 @@ def create_ms2_network(feature_df, df, mzml_file, out_dir):
     # Set node colors
     node_colors = [get_node_color(node) for node in G.nodes()]
 
-    # Print debug information
-    print("Unique statuses in graph:", set(nx.get_node_attributes(G, 'status').values()))
-    print("Unique colors used:", set(node_colors))
-    print("Color mapping:", distinct_colors)
-
     # Create the plot
-    plt.figure(figsize=(12, 8))
-    pos = nx.spring_layout(G)
-    nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=100)
-    nx.draw_networkx_edges(G, pos, alpha=0.2)
+    plt.figure(figsize=(20, 15))  # Increased figure size for better visibility
+
+    # Use a combination of layouts for connected and isolated nodes
+    connected_nodes = [node for node in G.nodes() if G.degree(node) > 0]
+    isolated_nodes = list(nx.isolates(G))
+
+    # Position connected nodes using Fruchterman-Reingold layout
+    pos_connected = nx.fruchterman_reingold_layout(G.subgraph(connected_nodes), k=2, iterations=50)
+
+    # Position isolated nodes in a grid layout around the connected component
+    pos_isolated = nx.spring_layout(G.subgraph(isolated_nodes), k=5, iterations=50)
+
+    # Combine layouts
+    pos = {**pos_connected, **pos_isolated}
+
+    # Adjust positions to spread isolated nodes
+    max_x = max(p[0] for p in pos.values())
+    max_y = max(p[1] for p in pos.values())
+    for node in isolated_nodes:
+        pos[node] = (pos[node][0] * 1.5 + max_x, pos[node][1] * 1.5 + max_y)
+
+    # Draw edges
+    nx.draw_networkx_edges(G, pos, alpha=0.2, edge_color='gray')
+
+    # Draw nodes
+    nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=30)
 
     # Add labels for legend
     unique_statuses = set(nx.get_node_attributes(G, 'status').values())
     legend_elements = [plt.Line2D([0], [0], marker='o', color='w', label=status,
-                                  markerfacecolor=distinct_colors.get(status, distinct_colors['Other']), markersize=10)
+                                  markerfacecolor=distinct_colors.get(status, distinct_colors['Other']), markersize=5)
                        for status in unique_statuses]
     plt.legend(handles=legend_elements, title="Status", loc="center left", bbox_to_anchor=(1, 0.5))
 
@@ -100,11 +122,11 @@ def create_ms2_network(feature_df, df, mzml_file, out_dir):
     plt.axis('off')
 
     # Save the plot
-    output_path = f"{out_dir}/{mzml_file.split('/')[-1]}_ms2_network.svg"
+    output_path = f"{out_dir}/{mzml_file.split('/')[-1]}_ms2_network_with_isolated.svg"
     plt.savefig(output_path, format='svg', bbox_inches='tight')
     plt.close()
 
-    print(f"MS/MS network plot saved to {output_path}")
+    print(f"MS/MS network plot with isolated nodes saved to {output_path}")
     print(f"Number of nodes: {G.number_of_nodes()}")
     print(f"Number of edges: {G.number_of_edges()}")
 
