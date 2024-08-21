@@ -11,8 +11,8 @@ def filter_df(df):
     # if matched to a doubly charged ion, remove the match
     df = df.apply(remove_doubly_charged_ions, axis=1)
 
-    # if matched to an isotope, remove the match
-    df = df.apply(remove_isotopes, axis=1)
+    # # if matched to an isotope, remove the match
+    # df = df.apply(remove_isotopes, axis=1)
 
     # filter by MS2 explained intensity
     print('Calculating MS2 explanation intensity...')

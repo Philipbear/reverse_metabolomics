@@ -365,9 +365,9 @@ class MSData:
 
             temp = [roi.id, roi.mz, roi.rt, roi.length, roi.rt_seq[0],
                     roi.rt_seq[-1], roi.peak_area, roi.peak_height, roi.charge_state,
-                    roi.is_isotope, roi.isotope_id_seq, iso_peaks,
-                    roi.adduct_type,
-                    int(roi.adduct_group_no) if roi.adduct_group_no is not None else None,
+                    # roi.is_isotope, roi.isotope_id_seq, iso_peaks,
+                    # roi.adduct_type,
+                    # int(roi.adduct_group_no) if roi.adduct_group_no is not None else None,
                     roi.best_ms2.scan + 1 if roi.best_ms2 is not None else None,
                     roi.best_ms2.peaks if roi.best_ms2 is not None else None,
                     [ms2.scan + 1 for ms2 in roi.ms2_seq] if roi.ms2_seq else None]
@@ -376,7 +376,7 @@ class MSData:
 
         # convert result to a pandas dataframe
         columns = ["ID", "m/z", "RT", "length", "RT_start", "RT_end", "peak_area", "peak_height",
-                   "charge", "is_isotope", "isotope_IDs", "isotopes", "adduct", "adduct_group",
+                   "charge", #"is_isotope", "isotope_IDs", "isotopes", "adduct", "adduct_group",
                    "best_MS2_scan_idx", "MS2", "all_MS2_scan_idx"]
 
         df = pd.DataFrame(result, columns=columns)

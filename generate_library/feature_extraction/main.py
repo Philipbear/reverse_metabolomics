@@ -39,9 +39,9 @@ def feature_extraction_single(file_path, mass_detect_int_tol=5e4,
     d.summarize_roi()
 
     # annotate isotopes, adducts
-    print('Annotating isotopes and adducts...')
-    annotate_isotope(d)
-    annotate_adduct(d)
+    # print('Annotating isotopes and adducts...')
+    # annotate_isotope(d)
+    # annotate_adduct(d)
 
     # output single file to a tsv file, in the same directory as the raw file
     print('Generating feature table...')
