@@ -6,7 +6,7 @@ def write_library(df, data_collector, file_name):
     Write the filtered library to a file.
     """
 
-    df = df[(df['selected']) & (pd.isnull(df['all_MS2_scan_idx']) == False)].reset_index(drop=True)
+    df = df[(df['selected']) & (pd.isnull(df['best_MS2_scan_idx']) == False)].reset_index(drop=True)
 
     rows = []
     for _, row in df.iterrows():
@@ -37,7 +37,4 @@ def write_library(df, data_collector, file_name):
             'STRAIN': None
         })
 
-
-    library_df = pd.DataFrame(rows)
-
-    return library_df
+    return pd.DataFrame(rows)

@@ -1,7 +1,7 @@
 import os
 
-from .isotope import annotate_isotope
-from .adduct import annotate_adduct
+# from .isotope import annotate_isotope
+# from .adduct import annotate_adduct
 from .config import Params, find_ms_info
 from .raw_data_utils import MSData
 

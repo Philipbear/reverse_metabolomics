@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-from feature_extraction import feature_extraction_single, plot_all_ms2, plot_all_eic, plot_mz_rt, create_ms2_network
+from feature_extraction import feature_extraction_single, plot_all_ms2, plot_all_eic, plot_mz_rt
 from cmpd import calculate_cmpd_mz
 from filter_library import filter_library
 
@@ -10,7 +10,8 @@ from filter_library import filter_library
 def main_batch(file_dir,
                out_dir='./output',
                data_collector='Minions',
-               plot=True):
+               plot=True,
+               write_individual_mgf=False):
     """
     Process a batch of mzML files and csv files.
     """
@@ -47,7 +48,6 @@ def main_batch(file_dir,
 
         print('Processing', _mzml)
         mzml = os.path.join(file_dir, _mzml)
-
         mzml_name = _mzml.split('.')[0]
 
         # Extract features from mzML file
@@ -57,7 +57,8 @@ def main_batch(file_dir,
 
         # Filter library
         print('Filtering library...')
-        df, library_df = filter_library(cmpd_df, feature_df, data_collector, mzml_name)
+        df, library_df = filter_library(cmpd_df, feature_df, data_collector, mzml_name, metadata_dir,
+                                        write_individual_mgf=write_individual_mgf)
 
         all_library_df = pd.concat([all_library_df, library_df])
 
@@ -67,10 +68,6 @@ def main_batch(file_dir,
         df.to_csv(out_df_path, sep='\t', index=False)
 
         if plot:
-            # Create MS2 network
-            print('Creating molecular network...')
-            create_ms2_network(feature_df, df, mzml, metadata_dir)
-
             # Plot all MS2 spectra
             print('Plotting all MS2 spectra...')
             plot_all_ms2(df, mzml, metadata_dir)
