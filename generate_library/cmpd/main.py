@@ -1,5 +1,5 @@
 import pandas as pd
-from .utils import neutralize_formula, calc_exact_mass
+from .utils import neutralize_formula, calc_exact_mass, smiles_to_inchi
 
 
 adduct_pos = [
@@ -23,7 +23,8 @@ adduct_neg = [
 ]
 
 
-def calculate_cmpd_mz(cmpd_df_path):
+def prepare_cmpd_df(cmpd_df_path):
+
     """
     Calculate the exact mass for each compound in the compound list
     """
@@ -37,7 +38,10 @@ def calculate_cmpd_mz(cmpd_df_path):
     # calculate the exact mass
     cmpd_df['exact_mass'] = cmpd_df['neutralized_formula'].apply(calc_exact_mass)
 
-    # Create a list to store the new rows
+    # add inchi information
+    cmpd_df['inchi'] = cmpd_df['SMILES'].apply(smiles_to_inchi)
+
+    # create a list to store the new rows
     new_rows = []
 
     # Iterate through each compound and adduct

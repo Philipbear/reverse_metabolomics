@@ -1,5 +1,15 @@
 from molmass import Formula
 import re
+from rdkit import Chem
+
+
+def smiles_to_inchi(smiles):
+    # Convert SMILES to a molecule object
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        return Chem.MolToInchi(mol)
+    except:
+        return None
 
 
 def neutralize_formula(formula):

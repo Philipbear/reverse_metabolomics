@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 from feature_extraction import feature_extraction_single, plot_all_ms2, plot_all_eic, plot_mz_rt
-from cmpd import calculate_cmpd_mz
+from cmpd import prepare_cmpd_df
 from filter_library import filter_library
 
 
@@ -32,7 +32,7 @@ def main_batch(file_dir,
     for _csv in csv_files:
         csv = os.path.join(file_dir, _csv)
         print('Loading', csv)
-        cmpd_df = calculate_cmpd_mz(csv)
+        cmpd_df = prepare_cmpd_df(csv)
         all_cmpd_df = pd.concat([all_cmpd_df, cmpd_df])
 
     # Get unique mzmls
@@ -52,8 +52,10 @@ def main_batch(file_dir,
 
         # Extract features from mzML file
         feature_df, ion_mode, intensity_threshold = feature_extraction_single(file_path=mzml,
-                                                                              save=True, out_dir=metadata_dir)
+                                                                              save=True,
+                                                                              out_dir=metadata_dir)
 
+        # Load the compound list for the mzml file
         cmpd_df = all_cmpd_df[(all_cmpd_df['unique_sample_id'] == _mzml) &
                               (all_cmpd_df['ion_mode'] == ion_mode)].reset_index(drop=True).copy()
 

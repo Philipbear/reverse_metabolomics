@@ -1,1 +1,1 @@
-from .main import calculate_cmpd_mz
+from .main import prepare_cmpd_df
