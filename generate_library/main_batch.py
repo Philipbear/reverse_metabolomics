@@ -51,13 +51,16 @@ def main_batch(file_dir,
         mzml_name = _mzml.split('.')[0]
 
         # Extract features from mzML file
-        feature_df = feature_extraction_single(file_path=mzml, save=True, out_dir=metadata_dir)
+        feature_df, ion_mode, intensity_threshold = feature_extraction_single(file_path=mzml,
+                                                                              save=True, out_dir=metadata_dir)
 
-        cmpd_df = all_cmpd_df[all_cmpd_df['unique_sample_id'] == _mzml].reset_index(drop=True).copy()
+        cmpd_df = all_cmpd_df[(all_cmpd_df['unique_sample_id'] == _mzml) &
+                              (all_cmpd_df['ion_mode'] == ion_mode)].reset_index(drop=True).copy()
 
         # Filter library
         print('Filtering library...')
-        df, library_df = filter_library(cmpd_df, feature_df, data_collector, mzml_name, metadata_dir,
+        df, library_df = filter_library(cmpd_df, feature_df, ion_mode, intensity_threshold,
+                                        data_collector, mzml_name, metadata_dir,
                                         write_individual_mgf=write_individual_mgf)
 
         all_library_df = pd.concat([all_library_df, library_df])

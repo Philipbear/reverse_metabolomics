@@ -6,7 +6,7 @@ from .config import Params, find_ms_info
 from .raw_data_utils import MSData
 
 
-def feature_extraction_single(file_path, mass_detect_int_tol=5e4,
+def feature_extraction_single(file_path, mass_detect_int_tol=None,
                               peak_cor_rt_tol=0.025, min_ppc=0.8,
                               ms1_tol=0.005, ms2_tol=0.015,
                               save=True, out_dir=None):
@@ -14,10 +14,11 @@ def feature_extraction_single(file_path, mass_detect_int_tol=5e4,
     feature detection from a single .mzML file
     """
 
-    ms_type, ion_mode, centroid = find_ms_info(file_path)
+    ms_type, ion_mode, centroided = find_ms_info(file_path)
 
     # init a new config object
-    config = init_config(ion_mode=ion_mode, mz_tol_ms1=ms1_tol, mz_tol_ms2=ms2_tol,
+    config = init_config(ms_type, ion_mode=ion_mode,
+                         mz_tol_ms1=ms1_tol, mz_tol_ms2=ms2_tol,
                          peak_cor_rt_tol=peak_cor_rt_tol, min_ppc=min_ppc,
                          mass_detect_int_tol=mass_detect_int_tol)
 
@@ -48,15 +49,18 @@ def feature_extraction_single(file_path, mass_detect_int_tol=5e4,
 
     df = d.output_single_file(save, out_dir)
 
-    return df
+    return df, ion_mode, config.int_tol
 
 
-def init_config(ion_mode="positive",
+def init_config(ms_type, ion_mode="positive",
                 mz_tol_ms1=0.005, mz_tol_ms2=0.015,
                 peak_cor_rt_tol=0.025, min_ppc=0.8,
                 mass_detect_int_tol=5e4):
     # init
     config = Params()
+
+    if mass_detect_int_tol is None:
+        mass_detect_int_tol = 5e4 if ms_type == "orbitrap" else 1e3
 
     ##########################
     # MS data acquisition

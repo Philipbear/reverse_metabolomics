@@ -159,7 +159,7 @@ class Roi:
         d = d[d != 0]
         self.top_average = np.mean(d, dtype=np.int64)
 
-    def sum_roi(self, cal_g_score=True, cal_a_score=True):
+    def sum_roi(self):
         """
         Function to summarize the ROI to generate attributes.
         """
@@ -180,11 +180,6 @@ class Roi:
         self.find_rt_ph_pa()
 
         self.noise_level = calculate_noise_level(self.int_seq)
-
-        if cal_g_score:
-            self.gaussian_similarity = calculate_gaussian_similarity(self.rt_seq, self.int_seq)
-        if cal_a_score:
-            self.asymmetry_factor = calculate_asymmetry_factor(self.int_seq)
 
         self.length = np.sum(self.int_seq > 0)
 

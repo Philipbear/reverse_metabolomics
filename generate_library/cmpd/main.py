@@ -2,7 +2,7 @@ import pandas as pd
 from .utils import neutralize_formula, calc_exact_mass
 
 
-_adduct_pos = [
+adduct_pos = [
     {'name': '[M+H]+', 'm': 1, 'charge': 1, 'mass': 1.00727645223},
     {'name': '[M+Na]+', 'm': 1, 'charge': 1, 'mass': 22.989220702},
     {'name': '[M+K]+', 'm': 1, 'charge': 1, 'mass': 38.9631579064},
@@ -13,7 +13,7 @@ _adduct_pos = [
     {'name': '[M+H-3H2O]+', 'm': 1, 'charge': 1, 'mass': -53.02441759986}
 ]
 
-_adduct_neg = [
+adduct_neg = [
     {'name': '[M-H]-', 'm': 1, 'charge': 1, 'mass': -1.00727645223},
     {'name': '[M+Cl]-', 'm': 1, 'charge': 1, 'mass': 34.968304102},
     {'name': '[M+Br]-', 'm': 1, 'charge': 1, 'mass': 78.91778902},
@@ -23,15 +23,10 @@ _adduct_neg = [
 ]
 
 
-def calculate_cmpd_mz(cmpd_df_path, ion_mode='positive'):
+def calculate_cmpd_mz(cmpd_df_path):
     """
     Calculate the exact mass for each compound in the compound list
     """
-
-    if ion_mode == 'positive':
-        adduct_ls = _adduct_pos
-    else:
-        adduct_ls = _adduct_neg
 
     # load the compound list with USI and taxon filter
     cmpd_df = pd.read_csv(cmpd_df_path, low_memory=False)
@@ -47,11 +42,20 @@ def calculate_cmpd_mz(cmpd_df_path, ion_mode='positive'):
 
     # Iterate through each compound and adduct
     for _, compound in cmpd_df.iterrows():
-        for adduct in adduct_ls:
+        for adduct in adduct_pos:
             mz = compound['exact_mass'] + adduct['mass']
             new_row = compound.to_dict()
             new_row['t_mz'] = mz
             new_row['t_adduct'] = adduct['name']
+            new_row['ion_mode'] = 'positive'
+            new_rows.append(new_row)
+
+        for adduct in adduct_neg:
+            mz = compound['exact_mass'] + adduct['mass']
+            new_row = compound.to_dict()
+            new_row['t_mz'] = mz
+            new_row['t_adduct'] = adduct['name']
+            new_row['ion_mode'] = 'negative'
             new_rows.append(new_row)
 
     # Create a new DataFrame from the list of new rows

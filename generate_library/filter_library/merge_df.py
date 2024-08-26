@@ -6,9 +6,6 @@ def merge_compound_feature_tables(compound_df, feature_df, mz_Da=0.002, mz_ppm=1
     Merge compound DataFrame with feature table based on m/z values.
     """
 
-    # Filter out compounds with ROI length less than 3
-    feature_df = feature_df[feature_df['length'] >= 3].reset_index(drop=True)
-
     # Create empty list to store matches
     matches = []
 

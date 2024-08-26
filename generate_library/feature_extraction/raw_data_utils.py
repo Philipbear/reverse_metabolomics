@@ -1,7 +1,6 @@
 from pyteomics import mzml, mzxml
 import numpy as np
 import os
-import matplotlib.pyplot as plt
 import pandas as pd
 
 from .config import Params
@@ -208,7 +207,7 @@ class MSData:
         self.rois = find_rois(self)
 
         for roi in self.rois:
-            roi.sum_roi(False, False)
+            roi.sum_roi()
 
         self.rois.sort(key=lambda x: x.mz)
 
@@ -224,7 +223,7 @@ class MSData:
 
         self.rois = tmp
 
-    def summarize_roi(self, cal_g_score=True, cal_a_score=True):
+    def summarize_roi(self):
         """
         Function to process ROIs.
 
@@ -235,7 +234,7 @@ class MSData:
         """
 
         for roi in self.rois:
-            roi.sum_roi(cal_g_score, cal_a_score)
+            roi.sum_roi()
 
         # sort rois by m/z
         self.rois.sort(key=lambda x: x.mz)
@@ -293,75 +292,15 @@ class MSData:
         for idx in range(len(self.rois)):
             self.rois[idx].id = idx
 
-    def plot_bpc(self, rt_range=None, label_name=False, output_dir=None):
-        """
-        Function to plot base peak chromatogram.
-
-        Parameters
-        ----------------------------------------------------------
-        rt_range: list
-            Retention time range [start, end]. The unit is minute.
-        label_name: bool
-            True: show the file name on the plot.
-        output_dir: str
-            Output directory of the plot. If specified, the plot will be saved to the directory.
-            If None, the plot will be shown.
-        """
-
-        if rt_range is not None:
-            x = [rt for rt in self.ms1_rt_seq if rt > rt_range[0] and rt < rt_range[1]]
-            y = [intensity for rt, intensity in zip(self.ms1_rt_seq, self.bpc_int) if
-                 rt > rt_range[0] and rt < rt_range[1]]
-
-        else:
-            x = self.ms1_rt_seq
-            y = self.bpc_int
-
-        plt.figure(figsize=(10, 3))
-        plt.rcParams['font.size'] = 14
-        plt.rcParams['font.family'] = 'Arial'
-        plt.plot(x, y, linewidth=1, color="black")
-        plt.xlabel("Retention Time (min)", fontsize=18, fontname='Arial')
-        plt.ylabel("Intensity", fontsize=18, fontname='Arial')
-        plt.xticks(fontsize=14, fontname='Arial')
-        plt.yticks(fontsize=14, fontname='Arial')
-        if label_name:
-            plt.text(self.ms1_rt_seq[0], np.max(self.bpc_int) * 0.9, self.file_name, fontsize=12, fontname='Arial',
-                     color="gray")
-
-        if output_dir is not None:
-            plt.savefig(output_dir, dpi=300, bbox_inches="tight")
-            plt.close()
-        else:
-            plt.show()
-
     def output_single_file(self, save=True, out_dir=None):
         """
         Function to generate a report for rois.
         """
-
         result = []
 
         for roi in self.rois:
 
-            # # output for visualization
-            # iso_dist = write_peaks(roi.isotope_mz_seq, roi.isotope_int_seq)
-            #
-            # ms2 = ""
-            # best_ms2_scan_idx = ""
-            # all_ms2_scan_idx = "" if not roi.ms2_seq else str([ms2.scan + 1 for ms2 in roi.ms2_seq])[1:-1]
-            # if roi.best_ms2 is not None:
-            #     ms2 = write_peaks(roi.best_ms2.peaks[:, 0], roi.best_ms2.peaks[:, 1])
-            #     best_ms2_scan_idx = roi.best_ms2.scan + 1
-            #
-            # temp = [roi.id, roi.mz.__round__(4), roi.rt.__round__(3), roi.length, roi.rt_seq[0],
-            #         roi.rt_seq[-1], roi.peak_area, roi.peak_height, roi.gaussian_similarity.__round__(2),
-            #         roi.noise_level.__round__(2), roi.asymmetry_factor.__round__(2), roi.charge_state,
-            #         roi.is_isotope, str(roi.isotope_id_seq)[1:-1], iso_dist,
-            #         roi.adduct_type, int(roi.adduct_group_no) if roi.adduct_group_no is not None else "",
-            #         best_ms2_scan_idx, ms2, all_ms2_scan_idx]
-
-            iso_peaks = np.column_stack((roi.isotope_mz_seq, roi.isotope_int_seq))
+            # iso_peaks = np.column_stack((roi.isotope_mz_seq, roi.isotope_int_seq))
 
             temp = [roi.id, roi.mz, roi.rt, roi.length, roi.rt_seq[0],
                     roi.rt_seq[-1], roi.peak_area, roi.peak_height, roi.charge_state,
@@ -452,54 +391,6 @@ class MSData:
         eic_scan_idx = np.array(eic_scan_idx)
 
         return eic_rt, eic_int, eic_mz, eic_scan_idx
-
-    def plot_eic(self, target_mz, target_rt=None, mz_tol=0.005, rt_tol=0.3,
-                 output=False, show_rt_line=True, return_eic_data=False):
-        """
-        Function to plot EIC of a target m/z.
-
-        Parameters
-        ----------
-        target_mz: float
-            Target m/z.
-        target_rt: float
-            Target retention time.
-        mz_tol: float
-            m/z tolerance.
-        rt_tol: float
-            Retention time tolerance.
-        output: str
-            Output file name. If not specified, the plot will be shown.
-        show_rt_line: bool
-            True: show the target retention time.
-            False: do not show the target retention time.
-        return_eic_data: bool
-            True: return the EIC data.
-            False: do not return the EIC data.
-        """
-
-        # get the eic data
-        eic_rt, eic_int, _, _ = self.get_eic_data(target_mz, target_rt, mz_tol, rt_tol)
-
-        plt.figure(figsize=(10, 3))
-        plt.rcParams['font.size'] = 14
-        plt.rcParams['font.family'] = 'Arial'
-        plt.plot(eic_rt, eic_int, linewidth=1, color="black")
-        plt.xlabel("Retention Time (min)", fontsize=18, fontname='Arial')
-        plt.ylabel("Intensity", fontsize=18, fontname='Arial')
-        plt.xticks(fontsize=14, fontname='Arial')
-        plt.yticks(fontsize=14, fontname='Arial')
-        if target_rt is not None and show_rt_line:
-            plt.axvline(x=target_rt, color='b', linestyle='--', linewidth=1)
-
-        if output:
-            plt.savefig(output, dpi=300, bbox_inches="tight")
-            plt.close()
-        else:
-            plt.show()
-
-        if return_eic_data:
-            return eic_rt, eic_int
 
     def find_ms2_by_mzrt(self, mz_target, rt_target, mz_tol=0.01, rt_tol=0.3, return_best=False):
         """
@@ -602,74 +493,6 @@ class MSData:
         for i in range(len(self.scans)):
             self.scans[i].rt = all_rts[i]
 
-    def plot_roi(self, roi_idx, mz_tol=0.005, rt_range=[0, np.inf], rt_window=None, output=False):
-        """
-        Function to plot EIC of a target m/z.
-        """
-
-        if rt_window is not None:
-            rt_range = [self.rois[roi_idx].rt - rt_window, self.rois[roi_idx].rt + rt_window]
-
-        # get the eic data
-        eic_rt, eic_int, _, eic_scan_idx = self.get_eic_data(self.rois[roi_idx].mz, mz_tol=mz_tol, rt_range=rt_range)
-        idx_start = np.where(eic_scan_idx == self.rois[roi_idx].scan_idx_seq[0])[0][0]
-        idx_end = np.where(eic_scan_idx == self.rois[roi_idx].scan_idx_seq[-1])[0][0] + 1
-
-        plt.figure(figsize=(7, 3))
-        plt.rcParams['font.size'] = 14
-        plt.rcParams['font.family'] = 'Arial'
-        plt.plot(eic_rt, eic_int, linewidth=1, color="black")
-        plt.fill_between(eic_rt[idx_start:idx_end], eic_int[idx_start:idx_end], color="black", alpha=0.4)
-        plt.xlabel("Retention Time (min)", fontsize=18, fontname='Arial')
-        plt.ylabel("Intensity", fontsize=18, fontname='Arial')
-        plt.xticks(fontsize=14, fontname='Arial')
-        plt.yticks(fontsize=14, fontname='Arial')
-
-        if output:
-            plt.savefig(output, dpi=300, bbox_inches="tight")
-            plt.close()
-            return None
-        else:
-            plt.show()
-            return eic_rt[np.argmax(eic_int)], np.max(eic_int), eic_scan_idx[np.argmax(eic_int)]
-
-    def plot_all_rois(self, output_path, mz_tol=0.01, rt_range=[0, np.inf], rt_window=None):
-        """
-        Function to plot EIC of all ROIs.
-        """
-
-        if output_path[-1] != "/":
-            output_path += "/"
-
-        for idx, roi in enumerate(self.rois):
-
-            if rt_window is not None:
-                rt_range = [roi.rt_seq[0] - rt_window, roi.rt_seq[-1] + rt_window]
-
-            # get the eic data
-            eic_rt, eic_int, _, eic_scan_idx = self.get_eic_data(roi.mz, mz_tol=mz_tol, rt_range=rt_range)
-            idx_start = np.where(eic_scan_idx == roi.scan_idx_seq[0])[0][0]
-            idx_end = np.where(eic_scan_idx == roi.scan_idx_seq[-1])[0][0] + 1
-
-            plt.figure(figsize=(9, 3))
-            plt.rcParams['font.size'] = 14
-            plt.rcParams['font.family'] = 'Arial'
-            plt.plot(eic_rt, eic_int, linewidth=0.5, color="black")
-            plt.fill_between(eic_rt[idx_start:idx_end], eic_int[idx_start:idx_end], color="black", alpha=0.2)
-            plt.axvline(x=roi.rt, color='b', linestyle='--', linewidth=1)
-            plt.xlabel("Retention Time (min)", fontsize=18, fontname='Arial')
-            plt.ylabel("Intensity", fontsize=18, fontname='Arial')
-            plt.xticks(fontsize=14, fontname='Arial')
-            plt.yticks(fontsize=14, fontname='Arial')
-            plt.text(eic_rt[0], np.max(eic_int) * 0.95, "m/z = {:.4f}".format(roi.mz), fontsize=12, fontname='Arial')
-            plt.text(eic_rt[0] + (eic_rt[-1] - eic_rt[0]) * 0.6, np.max(eic_int) * 0.95, self.file_name, fontsize=10,
-                     fontname='Arial', color="gray")
-
-            file_name = output_path + "roi{}_".format(idx) + str(roi.mz.__round__(4)) + ".png"
-
-            plt.savefig(file_name, dpi=300, bbox_inches="tight")
-            plt.close()
-
 
 class Scan:
     """
@@ -740,54 +563,6 @@ class Scan:
             # keep 4 decimal places for m/z and 0 decimal place for intensity
             print("Precursor m/z: " + str(np.round(self.precursor_mz, decimals=4)))
             print(self.peaks)
-
-    def plot_scan(self, mz_range=None, return_data=False):
-        """
-        Function to plot a scan.
-
-        Parameters
-        ----------------------------------------------------------
-        """
-
-        if self.level == 1:
-            x = self.mz_seq
-            y = self.int_seq
-        elif self.level == 2:
-            x = self.peaks[:, 0]
-            y = self.peaks[:, 1]
-
-        if mz_range is None:
-            mz_range = [np.min(x) - 10, np.max(x) + 10]
-        else:
-            y = y[np.logical_and(x > mz_range[0], x < mz_range[1])]
-            x = x[np.logical_and(x > mz_range[0], x < mz_range[1])]
-
-        max_int = np.max(y)
-        x_left = x[0] - 1
-        x_right = x[-1] + 1
-        plt.figure(figsize=(10, 3))
-        plt.rcParams['font.size'] = 14
-        plt.rcParams['font.family'] = 'Arial'
-        plt.ylim(0, max_int * 1.2)
-        plt.xlim(x_left, x_right)
-        plt.vlines(x=x, ymin=0, ymax=y, color="black", linewidth=1.5)
-        plt.hlines(y=0, xmin=mz_range[0], xmax=mz_range[1], color="black", linewidth=1.5)
-        plt.xlabel("m/z, Dalton", fontsize=18, fontname='Arial')
-        plt.ylabel("Intensity", fontsize=18, fontname='Arial')
-        plt.xticks(fontsize=14, fontname='Arial')
-        plt.yticks(fontsize=14, fontname='Arial')
-
-        if self.level == 2:
-            plt.text(x_left + 1, max_int * 1.1, "Precursor m/z = {:.4f}".format(self.precursor_mz), fontsize=11,
-                     fontname='Arial')
-
-        plt.text(x_left + 1 + (x_right - x_left) * 0.3, max_int * 1.1, "RT = {:.3f} min".format(self.rt), fontsize=11,
-                 fontname='Arial')
-
-        plt.show()
-
-        if return_data:
-            return x, y
 
 
 def _centroid(mz_seq, int_seq, mz_tol=0.005):
