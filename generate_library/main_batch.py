@@ -4,7 +4,7 @@ import pandas as pd
 
 from feature_extraction import feature_extraction_single, plot_all_ms2, plot_all_eic, plot_mz_rt
 from cmpd import prepare_cmpd_df
-from filter_library import filter_library
+from create_library import create_library
 
 
 def main_batch(file_dir,
@@ -27,7 +27,7 @@ def main_batch(file_dir,
     os.makedirs(metadata_dir, exist_ok=True)
 
     # Load the csv file
-    print('Calculating compound mz values...')
+    print('Calculating compound masses...')
     all_cmpd_df = pd.DataFrame()
     for _csv in csv_files:
         csv = os.path.join(file_dir, _csv)
@@ -60,15 +60,15 @@ def main_batch(file_dir,
                               (all_cmpd_df['ion_mode'] == ion_mode)].reset_index(drop=True).copy()
 
         # Filter library
-        print('Filtering library...')
-        df, library_df = filter_library(cmpd_df, feature_df, ion_mode, intensity_threshold,
+        print('Creating MS/MS library...')
+        df, library_df = create_library(cmpd_df, feature_df, ion_mode, intensity_threshold,
                                         data_collector, mzml_name, metadata_dir,
                                         write_individual_mgf=write_individual_mgf)
 
         all_library_df = pd.concat([all_library_df, library_df])
 
         # Save the filtered library
-        print('Saving the library...')
+        print('Saving...')
         out_df_path = os.path.join(metadata_dir, f'{mzml_name}_metadata.tsv')
         df.to_csv(out_df_path, sep='\t', index=False)
 

@@ -1,12 +1,15 @@
 import pandas as pd
 
 
-def write_library(df, data_collector, file_name):
+def write_library(df, data_collector, file_name, ion_mode):
     """
     Write the filtered library to a file.
     """
 
-    df = df[(df['selected']) & (pd.isnull(df['best_MS2_scan_idx']) == False)].reset_index(drop=True)
+    df = df[(df['selected']) & (~pd.isnull(df['best_MS2_scan_idx']))].reset_index(drop=True)
+
+    charge = 1 if ion_mode == 'positive' else -1
+    _ion_mode = 'Positive' if ion_mode == 'positive' else 'Negative'
 
     rows = []
     for _, row in df.iterrows():
@@ -19,10 +22,10 @@ def write_library(df, data_collector, file_name):
             'IONSOURCE': 'LC-ESI',
             'EXTRACTSCAN': round(row['best_MS2_scan_idx']),
             'SMILES': row['SMILES'],
-            'INCHI': None,
-            'INCHIAUX': None,
-            'CHARGE': 1,
-            'IONMODE': 'Positive',
+            'INCHI': row['inchi'],
+            'INCHIAUX': row['inchi_adduct'],
+            'CHARGE': charge,
+            'IONMODE': _ion_mode,
             'PUBMED': None,
             'ACQUISITION': 'Crude',
             'EXACTMASS': row['exact_mass'],

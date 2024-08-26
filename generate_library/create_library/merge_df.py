@@ -13,8 +13,8 @@ def merge_compound_feature_tables(compound_df, feature_df, mz_Da=0.002, mz_ppm=1
     for _, compound in compound_df.iterrows():
         # Find all features within the mass tolerance
         matching_features = feature_df[
-            (feature_df['m/z'] >= compound['t_mz'] - 0.1) &
-            (feature_df['m/z'] <= compound['t_mz'] + 0.1)
+            (feature_df['m/z'] >= compound['t_mz'] - 0.02) &
+            (feature_df['m/z'] <= compound['t_mz'] + 0.02)
             ]
 
         # If matches found, add them to the list
