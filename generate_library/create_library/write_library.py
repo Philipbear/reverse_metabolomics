@@ -16,7 +16,7 @@ def write_library(df, data_collector, file_name, ion_mode):
         rows.append({
             'FILENAME': file_name + '.mzML',
             'SEQ': '*..*',
-            'COMPOUND_NAME': row['compound_name'],
+            'COMPOUND_NAME': row['name'],
             'MOLECULEMASS': row['t_mz'],
             'INSTRUMENT': 'Orbitrap',
             'IONSOURCE': 'LC-ESI',
