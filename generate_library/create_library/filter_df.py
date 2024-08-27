@@ -9,7 +9,7 @@ def filter_feature_df(feature_df, intensity_threshold):
     """
 
     # filter by ROI length
-    feature_df = feature_df[feature_df['length'] > 3].reset_index(drop=True)
+    feature_df = feature_df[feature_df['length'] >= 5].reset_index(drop=True)
 
     # filter by intensity
     feature_df = feature_df[feature_df['peak_height'] >= intensity_threshold * 3].reset_index(drop=True)
@@ -17,7 +17,7 @@ def filter_feature_df(feature_df, intensity_threshold):
     return feature_df
 
 
-def filter_df(df, ion_mode):
+def filter_df(df, ion_mode, ms2_explanation_cutoff=0.60):
     """
     Filter the merged DataFrame
     """
@@ -30,14 +30,14 @@ def filter_df(df, ion_mode):
 
     # filter by MS2 explained intensity
     print('Calculating MS2 explanation intensity...')
-    df = df.apply(lambda row: filter_by_ms2_explanation(row, explanation_cutoff=0.60), axis=1)
+    df = df.apply(lambda row: filter_by_ms2_explanation(row, explanation_cutoff=ms2_explanation_cutoff), axis=1)
 
     # # remove smiles with 0 valid MS2
     # df = remove_smiles_with_empty_valid_ms2(df)
 
-    # filter by core adducts
-    print('Filtering by core adducts...')
-    df = core_adduct_filter(df, ion_mode, core_adduct_ls=None, rt_tol=0.025)
+    # # filter by core adducts
+    # print('Filtering by core adducts...')
+    # df = core_adduct_filter(df, ion_mode, core_adduct_ls=None, rt_tol=0.025)
 
     return df
 

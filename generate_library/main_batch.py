@@ -10,6 +10,7 @@ from create_library import create_library
 def main_batch(file_dir,
                out_dir='./output',
                data_collector='Minions',
+               ms2_explanation_cutoff=0.60,
                plot=True,
                write_individual_mgf=False):
     """
@@ -62,7 +63,9 @@ def main_batch(file_dir,
         # Filter library
         print('Creating MS/MS library...')
         df, library_df = create_library(cmpd_df, feature_df, ion_mode, intensity_threshold,
-                                        data_collector, mzml_name, metadata_dir,
+                                        data_collector, mzml_name,
+                                        filter_library=True, ms2_explanation_cutoff=ms2_explanation_cutoff,
+                                        metadata_dir=metadata_dir,
                                         write_individual_mgf=write_individual_mgf)
 
         all_library_df = pd.concat([all_library_df, library_df])
